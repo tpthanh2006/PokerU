@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions
+    url: https://t.me/+XzgukVlXazViZGRl
+    about: You can join the discussions on Telegram.
+  - name: Login does not work
+    url: https://github.com/tpthanh2006/PokerUNew/main/CONTRIBUTING.md
+    about: Before opening a new issue, please make sure to read CONTRIBUTING.md
