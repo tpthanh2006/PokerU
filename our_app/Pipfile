@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 whitenoise = "*"
-django-cors-headers = "*"
 djangorestframework = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 
