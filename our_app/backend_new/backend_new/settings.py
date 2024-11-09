@@ -50,11 +50,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'coresheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
-REST_FRAMEWORK = {'DEFAULT_PERMISSION_CLASSES':
-                  ['rest_framework.permission.AllowAny']} #Enact React framwork to interact with Django
+REST_FRAMEWORK = {
+  'DEFAULT_PERMISSION_CLASSES': [
+    'rest_framework.permissions.AllowAny' #Enact React framwork to interact with Django
+    ]
+}
 
 CORS_ORIGIN_ALLOW_ALL = True
 ROOT_URLCONF = 'backend_new.urls'
