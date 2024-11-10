@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'FrontendNewTests' in project 'FrontendNew'
+➜ Explicit dependency on target 'FrontendNew' in project 'FrontendNew'
+Target 'FrontendNew' in project 'FrontendNew' (no dependencies)
