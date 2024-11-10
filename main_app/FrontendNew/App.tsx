@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-class App extends React.Component {
+/*class App extends React.Component {
   state = { details: [], }
 
   componentDidMount() {
@@ -39,11 +39,9 @@ class App extends React.Component {
       </div>
     )
   }
-}
+}*/
 
-export default App;
-
-/*import type {PropsWithChildren} from 'react';
+import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -150,4 +148,6 @@ const styles = StyleSheet.create({
   highlight: {
     fontWeight: '700',
   },
-});*/
+});
+
+export default App;
