@@ -10,9 +10,9 @@ Please report any bug by opening an issue in the [repo](https://github.com/tptha
 ## Feature Suggestion
 Please recommend any new features by describing your idea in this [form](https://github.com/tpthanh2006/PokerUNew/issues/new?assignees=&labels=enhancement&projects=&template=new-feature.yml). Gracias!
 
-### Code Contributions
+## Code Contributions
 
-### Code Conventions
+## Code Conventions
 
 ## Entity-Relationship Diagram
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
