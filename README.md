@@ -15,9 +15,9 @@ Please recommend any new features by describing your idea in this [form](https:/
 ## ER Diagram
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
 
-## Known Issues
-
 ## Installation Guide
+
+## Known Issues
 
 ## Contact
 If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/).
