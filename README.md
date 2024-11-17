@@ -1,9 +1,8 @@
 ![](design_files/logo_large.png)
-
 A social media app designed for Tulane students to easily organize and join poker games on campus, compete and have fun!
 
-## Code Contributions
 
+## Code Contributions
 ### Bug Report
 Please report any bug by opening an issue in the [repo](https://github.com/tpthanh2006/PokerUNew/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml). Merci!
 
@@ -65,9 +64,11 @@ This guide is used for developers. An installation guide for users will be creat
 ### Known Issues
 TBD
 
+
 ## ER Diagram
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
 ![](design_files/erd.png)
+
 
 # Contact
 If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/).
