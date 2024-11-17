@@ -11,28 +11,35 @@ Please recommend any new features by describing your idea in this [form](https:/
 ## Code Contributions
 1. **Fork the repository**: Click the "Fork" button at the top right corner of the repository page.
 2. **Clone your fork**: 
-    ```sh
-    gh repo clone tpthanh2006/PokerUNew
-    cd our_app/FrontendNew #to customize react-native app for frontend
-    cd our_app/backend_new #to customize django apps for backend
-    ```
+  ```sh
+  gh repo clone tpthanh2006/PokerUNew
+  cd our_app/FrontendNew #to customize react-native app for frontend
+  cd our_app/backend_new #to customize django apps for backend
+  ```
 3. **Create a new branch**: 
-    ```sh
-    git checkout -b feature-or-bugfix-name
-    ```
+  ```sh
+  git checkout -b feature-or-bugfix-name
+  ```
 4. **Make your changes**: Implement your feature or bug fix.
-5. **Commit your changes**: 
+5. **Run our app**: 
+  ```sh
+  cd our_app/FrontendNew #navigate to our frontend folder
+  npm start #run react-native app
+  ```
+  Follow the guide on your terminal 
+6. **Commit your changes**: 
     ```sh
     git add .
-    git commit -m "Description of your changes"
+    git commit -m "Describe what you've changed"
     ```
-6. **Push to your fork**: 
+7. **Push to your fork**: 
     ```sh
     git push origin feature-or-bugfix-name
     ```
-7. **Create a pull request**: Go to the original repository and click the "New pull request" button. Provide a detailed description of your changes.
+8. **Create a pull request**: Go to the [original repository](https://github.com/tpthanh2006/PokerUNew/pulls) and click the "New pull request" button. Provide a detailed description of your changes.
 
 ## Code Conventions
+
 
 ## ER Diagram
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
