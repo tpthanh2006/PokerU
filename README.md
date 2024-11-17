@@ -56,7 +56,8 @@ This guide is used for developers. An installation guide for users will be creat
 1. **Install mobile emulator**:
 - [Android](https://www.youtube.com/watch?v=jnBQcva98Y4)
 - [iOS](https://www.youtube.com/watch?v=DloY4tyzKDA)
-2. **Run the app**: 
+2. **Open source code**: Run the terminal
+3. **Run the app**: 
     ```sh
     cd our_app/FrontendNew #navigate to our frontend folder
     npm start #run react-native app
