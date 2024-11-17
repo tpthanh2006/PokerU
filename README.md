@@ -39,16 +39,16 @@ Please recommend any new features by describing your idea in this [form](https:/
 Please follow these guidelines to maintain a consistent code style:
 
 - Use 1 tab for indentation.
-- Use descriptive and concies names for variables and functions.
+- Use descriptive and concise names for variables and functions.
 - Adhere to these naming conventions:
   - Frontend:
     - Components: PascalCase
-    - Global constants and enums: CONSTANT_CASE
+    - Global constants & enums: CONSTANT_CASE
   - Backend:
-    - App: lowercase and underscores (e.g: blog_app)
+    - App: lowercase & underscores (e.g: blog_app)
     - Model: singular nouns, capitalized first letter (e.g: Person)
-    - Field: lowercase and underscores (e.g: created_at)
-    - URL: lowercase, hyphen-separated (e.g., /blog-posts/)
+    - Field: lowercase & underscores (e.g: created_at)
+    - URL: lowercase & hyphen-separated (e.g., /blog-posts/)
 - Add comments to explain complex logic.
 
 ### Installation Guide
