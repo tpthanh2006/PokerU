@@ -1,7 +1,7 @@
 # PokerU
 
 A social media app designed for Tulane students to easily organize and join poker games on campus, compete and have fun!
-
+![](design_files/logo_large.png)
 ## Code Contributions
 
 ### Bug Report
