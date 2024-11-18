@@ -16,14 +16,16 @@ Please recommend any new features by describing your idea in this [form](https:/
 2. **Clone your fork**: 
     ```sh
     gh repo clone tpthanh2006/PokerU
-    cd our_app/FrontendNew #to customize react-native app for frontend
-    cd our_app/backend_new #to customize django apps for backend
     ```
 3. **Create a new branch**: 
     ```sh
     git checkout -b feature-or-bugfix-name
     ```
 4. **Make your changes**: Implement your feature or bug fix.
+    ```sh
+    cd our_app/FrontendNew #to customize react-native app for frontend
+    cd our_app/backend_new #to customize django apps for backend
+    ```
 5. **Commit your changes**: 
     ```sh
     git add .
