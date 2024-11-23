@@ -2,5 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.apple_list),
+    path('', views.host_games),
+    #path('', views.apple_list),
 ]

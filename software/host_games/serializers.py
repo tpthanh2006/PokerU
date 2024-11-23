@@ -1,6 +1,5 @@
-from .models import Apple
+'''from .models import Apple
 from typing import Iterable, List, Dict, Any
-
 
 def serialize_apples(apples: Iterable[Apple]) -> List[Dict[str, Any]]:
   data = []
@@ -10,4 +9,4 @@ def serialize_apples(apples: Iterable[Apple]) -> List[Dict[str, Any]]:
       'color': apple.color,
       'photo_url': apple.photo_url,
     })
-  return data
+  return data'''
