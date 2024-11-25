@@ -83,7 +83,7 @@ This guide is used for developers. An installation guide for users will be creat
     #click on local host link
     ```
 ### Known Issues
-TBD
+- [Migrations are not up to date with new models](https://forum.djangoproject.com/t/deleting-a-model-cause-error-for-old-migrations-that-had-referenced-it/25743)
 
 
 ## ER Diagram
