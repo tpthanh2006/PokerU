@@ -83,6 +83,20 @@ This guide is used for developers. An installation guide for users will be creat
     #click on local host link
     ```
 ### Known Issues
+- [OperationalError, no such column. Django](https://stackoverflow.com/questions/26312219/operationalerror-no-such-column-django)
+    1. Delete the db.sqlite3 file
+    2. Migrate changes: New db.sqlite3 will generates automatically
+      ```sh
+      python manage.py migrate
+      ```
+    3. Make migrations:
+      ```sh
+      python manage.py makemigrations
+      ```
+    4. Create the super user:
+      ```sh
+      python manage.py createsuperuser
+      ```
 - [Migrations are not up to date with new models](https://forum.djangoproject.com/t/deleting-a-model-cause-error-for-old-migrations-that-had-referenced-it/25743)
 
 
