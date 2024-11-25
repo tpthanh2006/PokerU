@@ -13,29 +13,29 @@ Please recommend any new features by describing your idea in this [form](https:/
 
 ### Programming
 1. **Fork the repository**: Click the "Fork" button at the top right corner of the repository page.
-2. **Clone your fork**: 
+2. **Clone your fork**:
     ```sh
     gh repo clone tpthanh2006/PokerU
     ```
-3. **Create a new branch**: 
+4. **Create a new branch**: 
     ```sh
     git checkout -b feature-or-bugfix-name
     ```
-4. **Make your changes**: Implement your feature or bug fix.
+5. **Make your changes**: Implement your feature or bug fix.
     ```sh
     cd .../software/frontend #to customize react-native frontend
     cd .../software/backend #to customize django backend
     ```
-5. **Commit your changes**: 
+6. **Commit your changes**: 
     ```sh
     git add .
     git commit -m "Describe what you've changed"
     ```
-6. **Push to your fork**: 
+7. **Push to your fork**: 
     ```sh
     git push origin feature-or-bugfix-name
     ```
-7. **Create a pull request**: Go to the [original repository](https://github.com/tpthanh2006/PokerUNew/pulls) and click the "New pull request" button. Provide a detailed description of your changes.
+8. **Create a pull request**: Go to the [original repository](https://github.com/tpthanh2006/PokerUNew/pulls) and click the "New pull request" button. Provide a detailed description of your changes.
 
 ### Code Conventions
 Please follow these guidelines to maintain a consistent code style:
@@ -86,17 +86,17 @@ This guide is used for developers. An installation guide for users will be creat
 - [OperationalError, no such column. Django](https://stackoverflow.com/questions/26312219/operationalerror-no-such-column-django)
     1. Delete the db.sqlite3 file
     2. Migrate changes: New db.sqlite3 will generates automatically
-      ```sh
-      python manage.py migrate
-      ```
+    ```sh
+    python manage.py migrate
+    ```
     3. Make migrations:
-      ```sh
-      python manage.py makemigrations
-      ```
+    ```sh
+    python manage.py makemigrations
+    ```
     4. Create the super user:
-      ```sh
-      python manage.py createsuperuser
-      ```
+    ```sh
+    python manage.py createsuperuser
+    ```
 - [Migrations are not up to date with new models](https://forum.djangoproject.com/t/deleting-a-model-cause-error-for-old-migrations-that-had-referenced-it/25743)
 
 
