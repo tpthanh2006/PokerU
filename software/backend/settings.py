@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'host_games',
+    'games',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -52,7 +53,8 @@ MIDDLEWARE = [
      "corsheaders.middleware.CorsMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]  # Make sure the port number matches the one you're using for the React app.
+# Make sure the port number matches the one you're using for the React app.
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
@@ -125,3 +127,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_REDIRECT_URL = "game-list"
+LOGOUT_REDIRECT_URL = "login"
