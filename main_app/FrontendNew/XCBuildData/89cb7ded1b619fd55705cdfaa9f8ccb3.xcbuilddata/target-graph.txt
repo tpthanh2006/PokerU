@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'FrontendNew' in project 'FrontendNew' (no dependencies)
