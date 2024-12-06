@@ -18,14 +18,18 @@ export default function SignUpScreen(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
 
   const handleSignUp = async () => {
     if (!isLoaded) return;
     
     setErrorMessage(null);
+    setLoading(true);
 
     if (!termsAccepted) {
       setErrorMessage('Please accept the Terms and Conditions to continue');
+      setLoading(false);
       return;
     }
 
@@ -33,12 +37,13 @@ export default function SignUpScreen(): React.JSX.Element {
       await signUp.create({
         emailAddress: email,
         password,
+        username: name,
       });
 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Sign up error:', JSON.stringify(err, null, 2));
       
       if (err.errors?.[0]?.code === 'form_identifier_exists') {
         setErrorMessage('An account with this email already exists');
@@ -49,34 +54,129 @@ export default function SignUpScreen(): React.JSX.Element {
       } else {
         setErrorMessage(err.errors?.[0]?.message || 'An error occurred during sign up');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerification = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || loading) return;
 
     setErrorMessage(null);
+    setLoading(true);
 
     try {
       const completeSignUp = await signUp.attemptEmailAddressVerification({
         code,
       });
 
-      if (completeSignUp.status === 'complete') {
+      if (completeSignUp.status !== 'complete') {
+        console.error('Verification status:', completeSignUp.status);
+        setErrorMessage('Verification failed. Please try again.');
+        return;
+      }
+
+      try {
         await setActive({ session: completeSignUp.createdSessionId });
         router.replace('/(home)/(tabs)/HomePage');
-      } else {
-        setErrorMessage('Verification failed. Please try again.');
+      } catch (err: any) {
+        console.error('Session error:', JSON.stringify(err, null, 2));
+        setErrorMessage('Account created but failed to sign in. Please try logging in.');
       }
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Verification error:', JSON.stringify(err, null, 2));
+      
       if (err.errors?.[0]?.code === 'form_code_incorrect') {
         setErrorMessage('Incorrect verification code. Please try again.');
+      } else if (err.errors?.[0]?.code === 'verification_expired') {
+        setErrorMessage('Verification code has expired. Please request a new one.');
       } else {
         setErrorMessage(err.errors?.[0]?.message || 'An error occurred during verification');
       }
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleResendCode = async () => {
+    if (!isLoaded || loading) return;
+
+    setLoading(true);
+    setErrorMessage(null);
+    setCode('');
+
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setErrorMessage('A new verification code has been sent to your email.');
+    } catch (err: any) {
+      console.error('Resend code error:', JSON.stringify(err, null, 2));
+      setErrorMessage('Failed to send new code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (pendingVerification) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Image
+          source={require('../../assets/images/circle_bg.png')}
+          style={styles.backgroundImage}
+          resizeMode="contain"
+        />
+        
+        <KeyboardAwareView>
+          <View style={styles.verificationWrapper}>
+            <View style={styles.verificationContainer}>
+              <Image
+                source={require('../../assets/images/logo_large.png')}
+                style={styles.verificationLogo}
+                resizeMode="contain"
+              />
+              
+              <View style={styles.verificationContent}>
+                <Text style={styles.title}>Verify Your Email</Text>
+                <Text style={styles.subtitle}>
+                  Enter the verification code sent to {email}
+                </Text>
+                
+                {errorMessage && (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                )}
+
+                <InputField
+                  label="Verification Code"
+                  placeholder="Enter code"
+                  value={code}
+                  onChange={setCode}
+                />
+                
+                <GradientButton 
+                  text={loading ? "Verifying..." : "Verify"} 
+                  onPress={handleVerification}
+                />
+
+                <TouchableOpacity 
+                  style={styles.resendButton} 
+                  onPress={handleResendCode}
+                  disabled={loading}
+                >
+                  <Text style={[
+                    styles.resendText,
+                    loading && styles.resendTextDisabled
+                  ]}>
+                    Didn't receive the code? Resend
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAwareView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -168,7 +268,10 @@ export default function SignUpScreen(): React.JSX.Element {
                 </View>
               </View>
 
-              <GradientButton text="Register" onPress={handleSignUp} />
+              <GradientButton 
+                text={loading ? "Creating Account..." : "Sign Up"} 
+                onPress={handleSignUp}
+              />
 
               <TouchableOpacity onPress={() => router.push('/(auth)/LoginScreen')}>
                 <Text style={styles.loginText}>
@@ -300,5 +403,46 @@ const styles = StyleSheet.create({
     color: '#BB86FC',
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  resendButton: {
+    marginTop: 16,
+    padding: 8,
+  },
+  resendText: {
+    color: '#BB86FC',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  verificationWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    marginTop: -40,
+  },
+  verificationContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  verificationLogo: {
+    width: 80,
+    height: 80,
+    marginBottom: 32,
+  },
+  verificationContent: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 16,
+  },
+  resendButton: {
+    marginTop: 8,
+    padding: 8,
+  },
+  resendText: {
+    color: '#BB86FC',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  resendTextDisabled: {
+    opacity: 0.5,
   },
 });
