@@ -16,6 +16,9 @@ Buy in: <b>${{ game.buy_in }}</b> | Reserved: <b>${{ game.amount_reserved }}</b>
 
 <small> UUID: <b>{{ game.game_id }}</b>  <br/>
 Primary Key: <b>{{ game.pk }}</b> </small> <br/>
+
+<a href="{% url 'join-game' game.pk %}" class="btn btn-primary">Join Game</a>
+
 <hr>
 
 <a href = "{% url 'game-list' %}" class = "btn btn-secondary"> Back </a>

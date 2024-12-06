@@ -19,6 +19,7 @@ class Game(models.Model):
   title = models.CharField(max_length=255, default="Great Game, Good Fun")
   host = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
   slots = models.DecimalField(max_digits=2, decimal_places=0, default=5)
+  players = models.ManyToManyField(User, related_name='joined_games', blank=True)
   description = models.TextField(default='Have fun with me!')
   private = models.BooleanField(default=False)
 
