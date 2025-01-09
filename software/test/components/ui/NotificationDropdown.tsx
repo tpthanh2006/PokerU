@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,45 +9,93 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import api, { setApiAuth } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
 interface Notification {
-  id: string;
-  type: 'friend_request' | 'game_invite' | 'achievement';
+  id: number;
+  type: 'GAME_STARTED' | 'GAME_ENDED' | 'NEW_GAMES';
   title: string;
   message: string;
-  time: string;
+  game: {
+    id: number;
+    title: string;
+  } | null;
+  created_at: string;
   read: boolean;
 }
 
 export const NotificationDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'friend_request',
-      title: 'New Friend Request',
-      message: 'John Doe sent you a friend request',
-      time: '2m ago',
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'game_invite',
-      title: 'Game Invitation',
-      message: 'Sarah invited you to join Friday Night Poker',
-      time: '15m ago',
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'achievement',
-      title: 'Achievement Unlocked',
-      message: 'You won 5 games in a row!',
-      time: '1h ago',
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        
+        await setApiAuth(token);
+        console.log('Fetching notifications...');
+        const response = await api.get('notifications/');
+        console.log('Notifications response:', response);
+        console.log('Notifications data:', response.data);
+        setNotifications(response.data);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await api.post(`notifications/${notificationId}/mark_read/`);
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId 
+            ? { ...n, read: true }
+            : n
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleNotificationPress = async (notification: Notification) => {
+    try {
+      console.log('Notification pressed:', notification);
+      await markAsRead(notification.id);
+
+      if ((notification.type === 'GAME_ENDED' || notification.type === 'GAME_STARTED') && notification.game) {
+        console.log('Navigating to game:', notification.game);
+        
+        if (notification.type === 'GAME_ENDED') {
+          router.push({
+            pathname: '/(home)/(screens)/ArchivedGameDetailsScreen',
+            params: { id: notification.game.id.toString() }
+          });
+        } else {
+          router.push({
+            pathname: '/(home)/(screens)/GameDetailsScreen',
+            params: { id: notification.game.id.toString() }
+          });
+        }
+      } else {
+        console.warn('Game notification without valid game data:', notification);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error handling notification press:', error);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -62,33 +110,20 @@ export const NotificationDropdown: React.FC<{ onClose: () => void }> = ({ onClos
     }
   };
 
-  const handleNotificationPress = (notification: Notification) => {
-    // Mark as read
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notification.id 
-          ? { ...n, read: true }
-          : n
-      )
-    );
-
-    // Handle navigation
-    switch (notification.type) {
-      case 'friend_request':
-        router.push('/(home)/(screens)/SearchFriendsScreen');
-        break;
-      case 'game_invite':
-        router.push('/(home)/(screens)/GameDetailsScreen?id=1');
-        break;
-      case 'achievement':
-        router.push('/(home)/(screens)/StatisticsDetailScreen?statId=games_played');
-        break;
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Mark all notifications as read in the backend
+      await Promise.all(
+        notifications
+          .filter(n => !n.read)
+          .map(n => api.post(`notifications/${n.id}/mark_read/`))
+      );
+      
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
     }
-    onClose();
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const hasUnread = notifications.some(n => !n.read);
@@ -119,29 +154,39 @@ export const NotificationDropdown: React.FC<{ onClose: () => void }> = ({ onClos
         </View>
 
         <ScrollView style={styles.notificationList}>
-          {notifications.map((notification) => (
-            <TouchableOpacity
-              key={notification.id}
-              style={[
-                styles.notificationItem,
-                !notification.read && styles.unreadItem
-              ]}
-              onPress={() => handleNotificationPress(notification)}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons 
-                  name={getIcon(notification.type)} 
-                  size={24} 
-                  color="#BB86FC" 
-                />
-              </View>
-              <View style={styles.contentContainer}>
-                <Text style={styles.notificationTitle}>{notification.title}</Text>
-                <Text style={styles.notificationMessage}>{notification.message}</Text>
-                <Text style={styles.notificationTime}>{notification.time}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <View style={styles.messageContainer}>
+              <Text style={styles.messageText}>Loading notifications...</Text>
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={styles.messageContainer}>
+              <Text style={styles.messageText}>No notifications</Text>
+            </View>
+          ) : (
+            notifications.map((notification) => (
+              <TouchableOpacity
+                key={notification.id}
+                style={[
+                  styles.notificationItem,
+                  !notification.read && styles.unreadItem
+                ]}
+                onPress={() => handleNotificationPress(notification)}
+              >
+                <View style={styles.iconContainer}>
+                  <Ionicons 
+                    name={getIcon(notification.type)} 
+                    size={24} 
+                    color="#BB86FC" 
+                  />
+                </View>
+                <View style={styles.contentContainer}>
+                  <Text style={styles.notificationTitle}>{notification.title}</Text>
+                  <Text style={styles.notificationMessage}>{notification.message}</Text>
+                  <Text style={styles.notificationTime}>{notification.time}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </View>
     </>
@@ -163,7 +208,7 @@ const styles = StyleSheet.create({
     top: 120,
     right: 20,
     width: width - 40,
-    maxHeight: 400,
+    maxHeight: 350,
     backgroundColor: '#1a0325',
     borderRadius: 16,
     elevation: 5,
@@ -190,11 +235,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   notificationList: {
-    maxHeight: 332,
+    maxHeight: 282,
   },
   notificationItem: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -243,5 +288,13 @@ const styles = StyleSheet.create({
     color: '#BB86FC',
     fontSize: 14,
     fontWeight: '600',
+  },
+  messageContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  messageText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
   },
 }); 

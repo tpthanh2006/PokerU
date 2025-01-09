@@ -79,8 +79,8 @@ export default function SettingsScreen(): React.JSX.Element {
           <SettingItem
             icon="help-circle-outline"
             title="Help & Support"
-            onPress={() => console.log('Help')}
-          />
+            onPress={() => router.push('/(home)/(screens)/HelpAndSupportScreen')}
+            />
           <SettingItem
             icon="document-text-outline"
             title="Terms of Service"

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %} {{ game.title }} {% endblock %}
+{% block content %}
+
+{% if user.is_authenticated %}
+<h1> {{ game.title }} (Joined) </h1>
+<small> Created by <b>{{ game.host.first_name }}</b>, at <b>{{ game.time_created }}</b> </small>
+<br/> <br/>
+
+Buy in: <b>${{ game.buy_in }}</b> <br/>
+Blinds: <b>${{ game.blinds }}</b> <br/>
+Starts at: <b>{{ game.time_start }} | {{ game.date_start }}</b> <br/> <br/>
+
+Slots: <b>{{ game.slots }}</b> <br/>
+Current Players: <i> {{ game.players.count}} </i> <br/>
+{{ game.players.all }} <br/> <br/>
+
+Private: <i> {{ game.private }} </i> <br/>
+Description: <i> {{ game.description }} </i> <br/> 
+<hr>
+
+<a href = "{% url 'game-list' %}" class = "btn btn-secondary"> Back </a>
+{% else %}
+Oops! You don't have permission to access this link.
+{% endif %}
+
+{% endblock %}

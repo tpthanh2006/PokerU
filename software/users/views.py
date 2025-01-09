@@ -4,7 +4,6 @@ from django.urls import reverse_lazy
 from .forms import SignUpForm
 from django.contrib.auth.forms import UserChangeForm
 
-
 # Create your views here.
 class UserRegisterView(generic.CreateView):
   form_class = SignUpForm

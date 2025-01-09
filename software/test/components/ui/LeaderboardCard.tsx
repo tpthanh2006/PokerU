@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface LeaderboardUser {
   id: string;
-  name: string;
+  username: string;
   imageUrl: string;
   winnings: number;
   position: number;
@@ -14,13 +14,26 @@ interface LeaderboardCardProps {
   title: string;
   users: LeaderboardUser[];
   onSeeAll: () => void;
+  loading?: boolean;
 }
 
 export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   title,
   users,
   onSeeAll,
+  loading = false,
 }) => {
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+        <Text style={styles.loadingText}>Loading leaderboard...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -45,7 +58,7 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
               </Text>
             </View>
             <Image source={{ uri: user.imageUrl }} style={styles.avatar} />
-            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.name}>{user.username}</Text>
           </View>
           <Text style={styles.winnings}>${user.winnings.toLocaleString()}</Text>
         </View>
@@ -122,5 +135,10 @@ const styles = StyleSheet.create({
     color: '#BB86FC',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    padding: 16,
   },
 }); 

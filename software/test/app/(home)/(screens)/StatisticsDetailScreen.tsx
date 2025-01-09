@@ -1,264 +1,358 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import { getUserStats, setApiAuth } from '../../../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
 import { LineChart } from 'react-native-chart-kit';
+import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+interface DetailedStats {
+  total_games: number;
+  total_profit: number;
+  avg_profit_per_game: number;
+  total_hours: number;
+  avg_hourly_rate: number;
+  roi: number;
+  biggest_win: number;
+  biggest_loss: number;
+  total_buyin: number;
+  historical_data: {
+    month: string;
+    profit: number;
+    hours: number;
+    games: number;
+    hourly_rate: number;
+  }[];
+}
 
-// Mock data for different statistics
-const STATS_DATA = {
-  games_played: {
-    title: 'Games Played',
-    currentValue: 127,
-    change: '+12 this month',
-    trend: 'up',
-    chartData: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+const renderChart = (
+  data: number[],
+  labels: string[],
+  label: string,
+  color = '#9702E7'
+) => (
+  <LineChart
+    data={{
+      labels,
       datasets: [{
-        data: [85, 92, 98, 109, 118, 127]
+        data,
+        color: () => color,
       }]
-    },
-    details: [
-      { label: 'Texas Hold\'em', value: '78 games' },
-      { label: 'Omaha', value: '32 games' },
-      { label: 'Seven Card Stud', value: '17 games' },
-    ]
-  },
-  win_rate: {
-    title: 'Win Rate',
-    currentValue: '68%',
-    change: '+5% this month',
-    trend: 'up',
-    chartData: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        data: [55, 58, 62, 64, 66, 68]
-      }]
-    },
-    details: [
-      { label: 'Texas Hold\'em', value: '72%' },
-      { label: 'Omaha', value: '65%' },
-      { label: 'Seven Card Stud', value: '58%' },
-    ]
-  },
-  total_winnings: {
-    title: 'Total Winnings',
-    currentValue: '$2,450',
-    change: '+$350 this month',
-    trend: 'up',
-    chartData: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        data: [1200, 1500, 1750, 1900, 2100, 2450]
-      }]
-    },
-    details: [
-      { label: 'Biggest Win', value: '$500' },
-      { label: 'Average Win', value: '$125' },
-      { label: 'Win Streak', value: '5 games' },
-    ]
-  },
-  current_streak: {
-    title: 'Current Streak',
-    currentValue: '5 games',
-    change: 'Best: 8 games',
-    trend: 'up',
-    chartData: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        data: [2, 3, 4, 3, 4, 5]
-      }]
-    },
-    details: [
-      { label: 'Longest Streak', value: '8 games' },
-      { label: 'Average Streak', value: '3 games' },
-      { label: 'Streaks This Month', value: '4' },
-    ]
-  },
-  tournament_wins: {
-    title: 'Tournament Wins',
-    currentValue: '3',
-    change: '+1 this month',
-    trend: 'up',
-    chartData: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        data: [0, 1, 1, 2, 2, 3]
-      }]
-    },
-    details: [
-      { label: 'Total Tournaments', value: '12' },
-      { label: 'Win Rate', value: '25%' },
-      { label: 'Average Position', value: '3rd' },
-    ]
-  },
-};
-
-// Add to STATS_DATA for each stat
-const GAME_HISTORY = [
-  {
-    id: '1',
-    date: '2024-03-15',
-    duration: '2h 15m',
-    earnings: '+$350',
-    gameType: 'Texas Hold\'em',
-    position: '1st',
-    isWin: true,
-  },
-  {
-    id: '2',
-    date: '2024-03-13',
-    duration: '1h 45m',
-    earnings: '-$120',
-    gameType: 'Omaha',
-    position: '4th',
-    isWin: false,
-  },
-  // Add more games...
-];
-
-// Add custom theme
-const customTheme = {
-  axis: {
-    style: {
-      axis: {
-        stroke: 'rgba(255, 255, 255, 0.3)',
+    }}
+    width={Dimensions.get('window').width - 40}
+    height={220}
+    chartConfig={{
+      backgroundColor: '#1a0325',
+      backgroundGradientFrom: '#1a0325',
+      backgroundGradientTo: '#1a0325',
+      decimalPlaces: 2,
+      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      style: {
+        borderRadius: 16
       },
-      tickLabels: {
-        fill: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
-      },
-      grid: {
-        stroke: 'none',
-      },
-    },
-  },
-};
+      propsForDots: {
+        r: "6",
+        strokeWidth: "2",
+        stroke: color
+      }
+    }}
+    bezier
+    style={{
+      marginVertical: 8,
+      borderRadius: 16
+    }}
+  />
+);
 
 export default function StatisticsDetailScreen() {
   const { statId } = useLocalSearchParams();
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DetailedStats | null>(null);
   const router = useRouter();
-  const statKey = statId?.toString() as keyof typeof STATS_DATA;
-  const statData = STATS_DATA[statKey];
 
-  if (!statData) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.text}>Stat not found</Text>
-      </SafeAreaView>
-    );
-  }
+  const loadStats = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      await setApiAuth(token, user?.id);
+      const userStats = await getUserStats();
+      setStats(userStats);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, getToken]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  const renderGamesPlayedDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Games Overview</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Games</Text>
+        <Text style={styles.value}>{stats?.total_games || 0}</Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Hours</Text>
+        <Text style={styles.value}>{stats?.total_hours?.toFixed(1) || 0}h</Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Average Game Duration</Text>
+        <Text style={styles.value}>
+          {stats?.total_games ? 
+            ((stats.total_hours / stats.total_games) * 60).toFixed(0) + ' min' : 
+            '0 min'}
+        </Text>
+      </View>
+      <Text style={styles.subtitle}>Games Over Time</Text>
+      {renderChart(
+        stats?.historical_data.map(d => d.games) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'Games'
+      )}
+    </>
+  );
+
+  const renderProfitDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Profit Analysis</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Profit/Loss</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.total_profit >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${stats?.total_profit?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Average Per Game</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.avg_profit_per_game >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${stats?.avg_profit_per_game?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>ROI</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.roi >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          {stats?.roi?.toFixed(1) || '0'}%
+        </Text>
+      </View>
+      <Text style={styles.subtitle}>Profit Trend</Text>
+      {renderChart(
+        stats?.historical_data.map(d => d.profit) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'Profit',
+        stats?.total_profit >= 0 ? '#4CAF50' : '#E14949'
+      )}
+    </>
+  );
+
+  const renderHourlyRateDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Hourly Performance</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Average Hourly Rate</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.avg_hourly_rate >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${stats?.avg_hourly_rate?.toFixed(2) || '0.00'}/hr
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Hours Played</Text>
+        <Text style={styles.value}>{stats?.total_hours?.toFixed(1) || 0}h</Text>
+      </View>
+      <Text style={styles.subtitle}>Hourly Rate Trend</Text>
+      {renderChart(
+        stats?.historical_data.map(d => d.hourly_rate) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'Hourly Rate',
+        stats?.avg_hourly_rate >= 0 ? '#4CAF50' : '#E14949'
+      )}
+    </>
+  );
+
+  const renderROIDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Return on Investment</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Overall ROI</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.roi >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          {stats?.roi?.toFixed(1) || '0'}%
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Buy-ins</Text>
+        <Text style={styles.value}>
+          ${stats?.total_buyin?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Returns</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.total_profit >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${(stats?.total_buyin + stats?.total_profit)?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+
+      <Text style={styles.subtitle}>ROI Trend</Text>
+      {renderChart(
+        stats?.historical_data.map(d => 
+          d.profit && d.hours ? (d.profit / d.hours) * 100 : 0
+        ) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'ROI %',
+        stats?.roi >= 0 ? '#4CAF50' : '#E14949'
+      )}
+    </>
+  );
+
+  const renderBiggestWinDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Biggest Wins & Losses</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Biggest Win</Text>
+        <Text style={[styles.value, { color: '#4CAF50' }]}>
+          ${stats?.biggest_win?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Biggest Loss</Text>
+        <Text style={[styles.value, { color: '#E14949' }]}>
+          ${stats?.biggest_loss?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Average Win</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.avg_profit_per_game >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${stats?.avg_profit_per_game?.toFixed(2) || '0.00'}
+        </Text>
+      </View>
+
+      <Text style={styles.subtitle}>Profit History</Text>
+      {renderChart(
+        stats?.historical_data.map(d => d.profit) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'Profit',
+        '#9702E7'
+      )}
+    </>
+  );
+
+  const renderHoursPlayedDetails = () => (
+    <>
+      <Text style={styles.subtitle}>Time Analysis</Text>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Total Hours</Text>
+        <Text style={styles.value}>{stats?.total_hours?.toFixed(1) || 0}h</Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Average Session</Text>
+        <Text style={styles.value}>
+          {stats?.total_games ? 
+            ((stats.total_hours / stats.total_games) * 60).toFixed(0) + ' min' : 
+            '0 min'}
+        </Text>
+      </View>
+      <View style={styles.statRow}>
+        <Text style={styles.label}>Profit Per Hour</Text>
+        <Text style={[
+          styles.value,
+          { color: stats?.avg_hourly_rate >= 0 ? '#4CAF50' : '#E14949' }
+        ]}>
+          ${stats?.avg_hourly_rate?.toFixed(2) || '0.00'}/hr
+        </Text>
+      </View>
+
+      <Text style={styles.subtitle}>Hours Played Trend</Text>
+      {renderChart(
+        stats?.historical_data.map(d => d.hours) || [],
+        stats?.historical_data.map(d => d.month) || [],
+        'Hours',
+        '#9702E7'
+      )}
+    </>
+  );
+
+  const renderContent = () => {
+    console.log('Current statId:', statId);
+    
+    switch (statId) {
+      case 'games_played':
+        return renderGamesPlayedDetails();
+      case 'total_profit_loss':
+        return renderProfitDetails();
+      case 'hourly_rate':
+        return renderHourlyRateDetails();
+      case 'hours_played':
+        return renderHoursPlayedDetails();
+      case 'roi':
+        return renderROIDetails();
+      case 'biggest_win':
+        return renderBiggestWinDetails();
+      default:
+        return (
+          <Text style={styles.error}>
+            Invalid statistic selected: {statId}
+          </Text>
+        );
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons 
-          name="arrow-back" 
-          size={24} 
-          color="white" 
-          onPress={() => router.back()} 
-        />
-        <Text style={styles.title}>{statData.title}</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#9702E7', '#E14949']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.title}>
+            {statId?.toString().split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ')}
+          </Text>
+        </View>
+      </LinearGradient>
+
       <ScrollView style={styles.content}>
-        <View style={styles.mainStatCard}>
-          <Text style={styles.mainStatValue}>{statData.currentValue}</Text>
-          <View style={styles.changeRow}>
-            <Ionicons 
-              name={statData.trend === 'up' ? 'arrow-up' : 'arrow-down'} 
-              size={20} 
-              color={statData.trend === 'up' ? '#4CAF50' : '#F44336'} 
-            />
-            <Text style={[
-              styles.changeText,
-              { color: statData.trend === 'up' ? '#4CAF50' : '#F44336' }
-            ]}>
-              {statData.change}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.chartContainer}>
-          <Text style={styles.sectionTitle}>Progress Over Time</Text>
-          <LineChart
-            data={{
-              labels: statData.chartData.labels,
-              datasets: [{
-                data: statData.chartData.datasets[0].data
-              }]
-            }}
-            width={width - 52} // Account for padding
-            height={220}
-            chartConfig={{
-              backgroundColor: '#1a0325',
-              backgroundGradientFrom: '#1a0325',
-              backgroundGradientTo: '#1a0325',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(187, 134, 252, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: "4",
-                strokeWidth: "2",
-                stroke: "#BB86FC"
-              }
-            }}
-            bezier
-            style={{
-              marginVertical: 8,
-              borderRadius: 16,
-            }}
-          />
-        </View>
-
-        <View style={styles.detailsContainer}>
-          <Text style={styles.detailsTitle}>Details</Text>
-          {statData.details.map((detail, index) => (
-            <View key={index} style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{detail.label}</Text>
-              <Text style={styles.detailValue}>{detail.value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.gameHistoryContainer}>
-          <Text style={styles.sectionTitle}>Game History</Text>
-          {GAME_HISTORY.map((game) => (
-            <View key={game.id} style={styles.gameCard}>
-              <View style={styles.gameHeader}>
-                <Text style={styles.gameDate}>{game.date}</Text>
-                <Text style={[
-                  styles.gameEarnings, 
-                  { color: game.earnings.startsWith('+') ? '#4CAF50' : '#F44336' }
-                ]}>
-                  {game.earnings}
-                </Text>
-              </View>
-              
-              <View style={styles.gameDetails}>
-                <View style={styles.gameDetail}>
-                  <Ionicons name="time-outline" size={16} color="rgba(255, 255, 255, 0.7)" />
-                  <Text style={styles.gameDetailText}>{game.duration}</Text>
-                </View>
-                <View style={styles.gameDetail}>
-                  <Ionicons name="trophy-outline" size={16} color="rgba(255, 255, 255, 0.7)" />
-                  <Text style={styles.gameDetailText}>{game.position}</Text>
-                </View>
-                <View style={styles.gameDetail}>
-                  <Ionicons name="grid-outline" size={16} color="rgba(255, 255, 255, 0.7)" />
-                  <Text style={styles.gameDetailText}>{game.gameType}</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
+        {loading ? (
+          <Text style={styles.loading}>Loading statistics...</Text>
+        ) : (
+          renderContent()
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -267,73 +361,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a0325',
   },
-  header: {
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
     color: 'white',
-    textTransform: 'capitalize',
+    fontSize: 24,
+    fontWeight: 'bold',
+    flex: 1,
   },
   content: {
     flex: 1,
     padding: 20,
+    marginTop: -20,
   },
-  text: {
+  subtitle: {
     color: 'white',
-    fontSize: 16,
-  },
-  mainStatCard: {
-    backgroundColor: 'rgba(187, 134, 252, 0.1)',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  mainStatValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
-  },
-  changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  changeText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  chartContainer: {
-    marginVertical: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    padding: 16,
-  },
-  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 16,
+    marginTop: 24,
   },
-  detailsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  detailsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 16,
-  },
-  detailRow: {
+  statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -341,52 +407,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
-  detailLabel: {
-    color: 'rgba(255, 255, 255, 0.7)',
+  label: {
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 16,
   },
-  detailValue: {
+  value: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  gameHistoryContainer: {
-    marginTop: 24,
-  },
-  gameCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  gameHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  gameDate: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  gameEarnings: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  gameDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+  loading: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
-  gameDetail: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  gameDetailText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
+  error: {
+    color: '#E14949',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
 }); 

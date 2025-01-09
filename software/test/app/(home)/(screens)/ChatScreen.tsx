@@ -133,23 +133,26 @@ export default function ChatScreen(): React.JSX.Element {
       >
         <SafeAreaView>
           <View style={styles.headerContent}>
-            {!chatDetails.isGameChat && (
-              <TouchableOpacity 
-                style={styles.headerImageContainer}
-                onPress={() => chatDetails.userId && router.push(`/(home)/(screens)/UserProfileScreen?id=${chatDetails.userId}`)}
-              >
-                <Image
-                  source={{ uri: chatDetails.image }}
-                  style={styles.headerImage}
-                />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
             <View style={styles.headerTextContainer}>
+              {!chatDetails.isGameChat && (
+                <TouchableOpacity 
+                  onPress={() => chatDetails.userId && router.push(`/(home)/(screens)/UserProfileScreen?id=${chatDetails.userId}`)}
+                >
+                  <Image
+                    source={{ uri: chatDetails.image }}
+                    style={styles.headerImage}
+                  />
+                </TouchableOpacity>
+              )}
               <Text style={styles.headerTitle}>{chatDetails.title}</Text>
-              <Text style={styles.headerSubtitle}>
-                {chatDetails.isGameChat ? 'Game Chat' : 'Direct Message'}
-              </Text>
             </View>
+            <View style={{ width: 40 }} />
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -224,18 +227,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerGradient: {
-    paddingBottom: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 12,
+    paddingBottom: 20,
   },
-  headerImageContainer: {
-    marginRight: 16,
+  headerTextContainer: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerImage: {
     width: 40,
@@ -243,19 +248,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: 'white',
-  },
-  headerTextContainer: {
-    flex: 1,
+    marginBottom: 8,
   },
   headerTitle: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
   },
   chatContainer: {
     flex: 1,
@@ -298,5 +296,13 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'white',
     fontSize: 18,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   TextInput,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { InputField } from '../../../components/ui/InputField';
@@ -17,9 +18,13 @@ import GradientButton from '../../../components/ui/GradientButton';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { useUser, useAuth } from '@clerk/clerk-expo';
+import { createGame, setApiAuth } from '../../../services/api';
 
 export default function HostGameScreen(): React.JSX.Element {
   const router = useRouter();
+  const { user } = useUser();
+  const { getToken, isSignedIn } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -30,69 +35,118 @@ export default function HostGameScreen(): React.JSX.Element {
   const [isPublic, setIsPublic] = useState(true);
   
   // Date & Time picker states
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showPicker, setShowPicker] = useState<'date' | 'time' | null>(null);
 
-  // Add state for storing the actual Date objects
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  // Update to store full Date objects
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<Date>(new Date());
 
-  const handleCreateGame = () => {
-    // This will be implemented later with backend integration
-    console.log('Creating game...');
-    router.back();
+  // Add title to state
+  const [title, setTitle] = useState('');
+
+  // Add at the top with other state variables
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreateGame = async () => {
+    try {
+      console.log('Create game attempt:', {
+        isSignedIn,
+        hasUser: !!user,
+        userId: user?.id
+      });
+
+      if (!isSignedIn || !user) {
+        Alert.alert('Error', 'You must be signed in to create a game');
+        return;
+      }
+
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication failed. Please try signing in again.');
+        router.push('/(auth)/OnboardingScreen');
+        return;
+      }
+
+      if (!title || !date || !time || !buyIn || !totalSpots) {
+        Alert.alert("Error", "Please fill in all required fields");
+        return;
+      }
+
+      const combinedDateTime = new Date(selectedDate);
+      combinedDateTime.setHours(
+        selectedTime.getHours(),
+        selectedTime.getMinutes(),
+        0,
+        0
+      );
+
+      setIsSubmitting(true);
+      await setApiAuth(token, user.id);
+      
+      const gameData = {
+        title: title.trim(),
+        description: description.trim() || 'No description provided',
+        location: location.trim(),
+        scheduled_time: combinedDateTime.toISOString(),
+        buy_in: Number(buyIn),
+        slots: Number(totalSpots),
+        blinds: 0,
+        amount_reserved: 0,
+        private: !isPublic
+      };
+
+      console.log('Attempting to create game with data:', gameData);
+      const createdGame = await createGame(gameData);
+      console.log('Game created successfully:', createdGame);
+      
+      router.push(`/(home)/(screens)/GameDashboardAdminScreen?id=${createdGame.id}`);
+    } catch (error: any) {
+      console.error('Game creation failed:', error);
+      Alert.alert('Error', 'Failed to create game. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDateChange = (event: any, chosenDate?: Date) => {
     if (chosenDate) {
-      setSelectedDate(chosenDate); // Store the full Date object
+      setSelectedDate(chosenDate);
       setDate(chosenDate.toLocaleDateString());
     }
   };
 
   const handleTimeChange = (event: any, chosenTime?: Date) => {
     if (chosenTime) {
-      setSelectedTime(chosenTime); // Store the full Date object
+      setSelectedTime(chosenTime);
       setTime(chosenTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
   };
 
-  const openDatePicker = () => {
-    setShowTimePicker(false);
-    setShowDatePicker(true);
-    if (!date) {
-      setDate(new Date().toLocaleDateString());
-    }
-  };
-
-  const openTimePicker = () => {
-    setShowDatePicker(false);
-    setShowTimePicker(true);
-    if (!time) {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }
-  };
-
-  const closePickers = () => {
-    setShowDatePicker(false);
-    setShowTimePicker(false);
+  const handleDonePress = () => {
+    setShowPicker(null);
   };
 
   return (
-    <TouchableWithoutFeedback onPress={closePickers}>
-      <SafeAreaView style={styles.safeArea}>
+    <TouchableWithoutFeedback onPress={() => setShowPicker(null)}>
+      <View style={styles.container}>
         <LinearGradient
           colors={['#9702E7', '#E14949']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.headerGradient}
         >
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Host a Game</Text>
-            <Text style={styles.headerSubtitle}>
-              Set up your poker game details
-            </Text>
-          </View>
+          <SafeAreaView>
+            <View style={styles.headerContent}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <Ionicons name="chevron-back" size={24} color="white" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Host Game</Text>
+              <View style={{ width: 40 }} />
+            </View>
+          </SafeAreaView>
         </LinearGradient>
 
         <KeyboardAvoidingView 
@@ -105,55 +159,57 @@ export default function HostGameScreen(): React.JSX.Element {
             contentContainerStyle={styles.contentContainer}
           >
             <View style={styles.inputContainer}>
-              <View style={styles.dateTimeInput}>
-                <TouchableOpacity
-                  style={styles.dateTimeButton}
-                  onPress={openDatePicker}
-                  activeOpacity={0.7}
-                >
-                  <InputField
-                    label="Date"
-                    placeholder="Select Date"
-                    value={date}
-                    editable={false}
-                    pointerEvents="none"
-                  />
-                  <Ionicons 
-                    name="calendar" 
-                    size={24} 
-                    color="#BB86FC" 
-                    style={styles.inputIcon}
-                  />
-                </TouchableOpacity>
-              </View>
+              <InputField
+                label="Game Title"
+                placeholder="Enter Game Title"
+                value={title}
+                onChange={setTitle}
+              />
 
-              <View style={styles.dateTimeInput}>
-                <TouchableOpacity
-                  style={styles.dateTimeButton}
-                  onPress={openTimePicker}
-                  activeOpacity={0.7}
-                >
-                  <InputField
-                    label="Time"
-                    placeholder="Select Time"
-                    value={time}
-                    editable={false}
-                    pointerEvents="none"
-                  />
-                  <Ionicons 
-                    name="time" 
-                    size={24} 
-                    color="#BB86FC" 
-                    style={styles.inputIcon}
-                  />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={styles.dateTimeInput} 
+                onPress={() => setShowPicker('date')}
+              >
+                <InputField
+                  label="Date"
+                  value={date}
+                  editable={false}
+                  pointerEvents="none"
+                  rightIcon={
+                    <Ionicons 
+                      name="calendar-outline" 
+                      size={24} 
+                      color="rgba(255, 255, 255, 0.6)" 
+                    />
+                  }
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.dateTimeInput} 
+                onPress={() => setShowPicker('time')}
+              >
+                <InputField
+                  label="Time"
+                  value={time}
+                  editable={false}
+                  pointerEvents="none"
+                  rightIcon={
+                    <Ionicons 
+                      name="time-outline" 
+                      size={24} 
+                      color="rgba(255, 255, 255, 0.6)" 
+                    />
+                  }
+                />
+              </TouchableOpacity>
 
               <InputField
                 label="Buy In Amount ($)"
                 placeholder="Enter Buy In Amount"
                 value={buyIn}
                 onChange={setBuyIn}
+                keyboardType="numeric"
               />
 
               <InputField
@@ -161,6 +217,7 @@ export default function HostGameScreen(): React.JSX.Element {
                 placeholder="Enter Number of Players"
                 value={totalSpots}
                 onChange={setTotalSpots}
+                keyboardType="numeric"
               />
 
               <InputField
@@ -212,16 +269,17 @@ export default function HostGameScreen(): React.JSX.Element {
 
           <View style={styles.footer}>
             <GradientButton 
-              text="Create Game" 
+              text={isSubmitting ? "Creating..." : "Create Game"}
               onPress={handleCreateGame}
+              disabled={isSubmitting}
             />
           </View>
         </KeyboardAvoidingView>
 
-        {(showDatePicker || showTimePicker) && (
+        {showPicker && (
           <View style={styles.pickerOverlay}>
             <View style={styles.pickerContainer}>
-              {showDatePicker && (
+              {showPicker === 'date' && (
                 <DateTimePicker
                   value={selectedDate || new Date()}
                   mode="date"
@@ -230,7 +288,7 @@ export default function HostGameScreen(): React.JSX.Element {
                   minimumDate={new Date()}
                 />
               )}
-              {showTimePicker && (
+              {showPicker === 'time' && (
                 <DateTimePicker
                   value={selectedTime || new Date()}
                   mode="time"
@@ -238,46 +296,44 @@ export default function HostGameScreen(): React.JSX.Element {
                   onChange={handleTimeChange}
                 />
               )}
+              <TouchableOpacity 
+                style={styles.doneButton}
+                onPress={handleDonePress}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
-      </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#1a0325',
   },
   headerGradient: {
-    paddingTop: Platform.OS === 'android' ? 45 : 60,
-    paddingBottom: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
   },
   headerContent: {
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   headerTitle: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
   },
   keyboardAvoidingView: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 100 : 120,
   },
   content: {
     flex: 1,
@@ -290,21 +346,6 @@ const styles = StyleSheet.create({
   },
   dateTimeInput: {
     width: '100%',
-    position: 'relative',
-  },
-  dateTimeButton: {
-    width: '100%',
-    position: 'relative',
-    height: 56,
-    justifyContent: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{
-      translateY: -12,
-    }],
   },
   toggleContainer: {
     marginTop: 8,
@@ -348,7 +389,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   pickerContainer: {
     position: 'absolute',
@@ -359,5 +400,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  doneButton: {
+    backgroundColor: '#BB86FC',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 }); 

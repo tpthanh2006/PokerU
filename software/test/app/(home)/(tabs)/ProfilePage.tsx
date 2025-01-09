@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { SegmentedControl } from '../../../components/ui/SegmentedControl';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import TransparentButton from '../../../components/ui/TransparentButton';
 import GradientButton from '../../../components/ui/GradientButton';
+import { getUserStats, setApiAuth } from '../../../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -26,19 +27,37 @@ interface AchievementCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon }) => {
   const router = useRouter();
-  const statId = title.toLowerCase().replace(/ /g, '_');
+  
+  // Map titles to consistent URL parameters
+  const getStatId = (title: string) => {
+    switch (title) {
+      case 'Games Played':
+        return 'games_played';
+      case 'Total Profit/Loss':
+        return 'total_profit_loss';
+      case 'Hourly Rate':
+        return 'hourly_rate';
+      case 'Hours Played':
+        return 'hours_played';
+      case 'ROI':
+        return 'roi';
+      case 'Biggest Win':
+        return 'biggest_win';
+      default:
+        return title.toLowerCase().replace(/ /g, '_');
+    }
+  };
   
   const handlePress = () => {
-    if (title !== 'Favorite Game') {  // Don't navigate for Favorite Game
-      router.push(`/(home)/(screens)/StatisticsDetailScreen?statId=${statId}`);
-    }
+    // Make all stats navigable
+    const statId = getStatId(title);
+    router.push(`/(home)/(screens)/StatisticsDetailScreen?statId=${statId}`);
   };
 
   return (
     <TouchableOpacity 
       style={styles.statCard}
       onPress={handlePress}
-      disabled={title === 'Favorite Game'}
     >
       <View style={styles.statIconContainer}>
         <Ionicons name={icon} size={24} color="#9702E7" />
@@ -66,41 +85,75 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ title, description, i
 );
 
 export default function ProfilePage(): React.JSX.Element {
+  const { getToken } = useAuth();
   const { user } = useUser();
   const username = user?.username || 'User';
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({
+    total_games: 0,
+    total_profit: 0,
+    avg_profit_per_game: 0,
+    total_hours: 0,
+    avg_hourly_rate: 0,
+    roi: 0,
+    biggest_win: 0,
+    biggest_loss: 0
+  });
+
+  const loadStats = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        console.error('No auth token available');
+        return;
+      }
+
+      await setApiAuth(token, user?.id);
+      const stats = await getUserStats();
+      setUserStats(stats);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, getToken]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   const stats: StatCardProps[] = [
     {
       title: 'Games Played',
-      value: '127',
+      value: userStats.total_games.toString(),
       icon: 'game-controller',
     },
     {
-      title: 'Win Rate',
-      value: '68%',
-      icon: 'trophy',
-    },
-    {
-      title: 'Total Winnings',
-      value: '$2,450',
+      title: 'Total Profit/Loss',
+      value: `$${userStats.total_profit.toFixed(2)}`,
       icon: 'cash',
     },
     {
-      title: 'Favorite Game',
-      value: 'Texas Hold\'em',
-      icon: 'heart',
+      title: 'Hours Played',
+      value: `${userStats.total_hours.toFixed(1)}h`,
+      icon: 'time',
     },
     {
-      title: 'Current Streak',
-      value: '5 games',
-      icon: 'flame',
+      title: 'Hourly Rate',
+      value: `$${userStats.avg_hourly_rate.toFixed(2)}/hr`,
+      icon: 'trending-up',
     },
     {
-      title: 'Tournament Wins',
-      value: '3',
-      icon: 'medal',
+      title: 'ROI',
+      value: `${userStats.roi.toFixed(1)}%`,
+      icon: 'analytics',
+    },
+    {
+      title: 'Biggest Win',
+      value: `$${userStats.biggest_win.toFixed(2)}`,
+      icon: 'trophy',
     },
   ];
 
@@ -192,9 +245,13 @@ export default function ProfilePage(): React.JSX.Element {
       <ScrollView style={styles.contentContainer}>
         {selectedIndex === 0 ? (
           <View style={styles.statsGrid}>
-            {stats.map((stat, index) => (
-              <StatCard key={index} {...stat} />
-            ))}
+            {loading ? (
+              <Text style={styles.loadingText}>Loading stats...</Text>
+            ) : (
+              stats.map((stat, index) => (
+                <StatCard key={index} {...stat} />
+              ))
+            )}
           </View>
         ) : (
           <View style={styles.achievementsContainer}>
@@ -373,5 +430,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 15,
     fontWeight: '600',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    width: '100%',
+    marginTop: 20,
   },
 });

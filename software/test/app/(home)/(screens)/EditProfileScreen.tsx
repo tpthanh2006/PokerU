@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useUser } from '@clerk/clerk-expo';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
 import { InputField } from '../../../components/ui/InputField';
 import { KeyboardAwareView } from '../../../components/ui/KeyboardAwareView';
@@ -18,6 +18,7 @@ import GradientButton from '../../../components/ui/GradientButton';
 
 export default function EditProfileScreen() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export default function EditProfileScreen() {
   const handleImagePick = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaType: 'image',
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -94,35 +95,60 @@ export default function EditProfileScreen() {
 
       if (!result.canceled) {
         setLoading(true);
+        setError(null);
         try {
+          // Log the user state
+          console.log('User state:', {
+            id: user?.id,
+            username: user?.username,
+            imageUrl: user?.imageUrl
+          });
+
           const localUri = result.assets[0].uri;
           const filename = localUri.split('/').pop() || 'profile.jpg';
           const match = /\.(\w+)$/.exec(filename);
           const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-          // Create the file object
           const file = {
             uri: localUri,
             type,
             name: filename,
           };
 
-          console.log('Uploading image:', file);
+          // Try to get a fresh token before upload
+          const token = await getToken();
+          console.log('Token available:', !!token);
 
-          // Send directly to Clerk
+          // Upload with explicit session handling
           await user?.setProfileImage({
-            file
+            file,
+            uploadType: 'data_url'
           });
 
+          // Wait a moment for Clerk to process
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Force reload the user
+          await user?.reload();
+          
           setLoading(false);
-        } catch (uploadError) {
-          console.error('Upload error details:', uploadError);
-          setError('Failed to upload image');
+        } catch (uploadError: any) {
+          console.error('Full upload error:', uploadError);
+          
+          // Check if we can get user details
+          console.log('User state after error:', {
+            id: user?.id,
+            username: user?.username,
+            imageUrl: user?.imageUrl,
+            hasToken: Boolean(await getToken())
+          });
+
+          setError(uploadError.message || 'Failed to upload image');
           setLoading(false);
         }
       }
     } catch (err) {
-      console.error('Error picking image:', err);
+      console.error('Image picker error:', err);
       setError('Failed to select image');
       setLoading(false);
     }

@@ -29,7 +29,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "@clerk/clerk-expo",
+        {
+          "publishableKey": "pk_test_YnJhdmUtbGFyay0yNS5jbGVyay5hY2NvdW50cy5kZXYk"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

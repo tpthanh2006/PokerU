@@ -1,124 +1,152 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Game } from '../../app/(home)/(tabs)/FindGamesPage';
 
 interface GameCardProps {
-  hostName: string;
-  hostImage: string;
-  dateTime: string;
-  buyIn: number;
-  joinedPlayers: number;
-  totalSpots: number;
+  game: Game;
   onPress: () => void;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({
-  hostName,
-  hostImage,
-  dateTime,
-  buyIn,
-  joinedPlayers,
-  totalSpots,
-  onPress,
-}) => {
-  const progressPercentage = (joinedPlayers / totalSpots) * 100;
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  // Helper function to check if two dates are the same day
+  const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getDate() === d2.getDate() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getFullYear() === d2.getFullYear();
+  };
+
+  // Format the time part
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  // Determine the date part
+  let dateStr;
+  if (isSameDay(date, now)) {
+    dateStr = 'Today';
+  } else if (isSameDay(date, tomorrow)) {
+    dateStr = 'Tomorrow';
+  } else {
+    dateStr = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  return `${dateStr} at ${timeStr}`;
+};
+
+export const GameCard: React.FC<GameCardProps> = ({ game, onPress }) => {
+  const dateTime = formatDateTime(game.scheduled_time);
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <View style={styles.topSection}>
-        <View style={styles.hostSection}>
-          <Image source={{ uri: hostImage }} style={styles.hostImage} />
-          <View style={styles.hostInfo}>
-            <Text style={styles.hostName}>{hostName}</Text>
-            <Text style={styles.dateTime}>{dateTime}</Text>
+    <TouchableOpacity onPress={onPress}>
+      <LinearGradient
+        colors={['rgba(187, 134, 252, 0.1)', 'rgba(187, 134, 252, 0.05)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.card}
+      >
+        <View style={styles.header}>
+          <Image 
+            source={{ uri: game.hostImage }} 
+            style={styles.hostImage} 
+          />
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{game.title}</Text>
+            <Text style={styles.host}>Hosted by {game.hostName}</Text>
           </View>
         </View>
-        <View style={styles.buyInSection}>
-          <Text style={styles.buyInAmount}>${buyIn}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#BB86FC" />
-        </View>
-      </View>
 
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBackground}>
-          <LinearGradient
-            colors={['#9702E7', '#E14949']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.progressBar, { width: `${progressPercentage}%` }]}
-          />
+        <View style={styles.details}>
+          <View style={styles.detailsRow}>
+            <View style={styles.detailItem}>
+              <Ionicons name="calendar-outline" size={20} color="#BB86FC" />
+              <Text style={styles.detailText}>{dateTime}</Text>
+            </View>
+
+            <View style={styles.separator} />
+
+            <View style={styles.detailItem}>
+              <Ionicons name="cash-outline" size={20} color="#BB86FC" />
+              <Text style={styles.detailText}>${game.buyIn}</Text>
+            </View>
+
+            <View style={styles.separator} />
+
+            <View style={styles.detailItem}>
+              <Ionicons name="people-outline" size={20} color="#BB86FC" />
+              <Text style={styles.detailText}>
+                {game.playerCount}/{game.totalSpots}
+              </Text>
+            </View>
+          </View>
         </View>
-        <Text style={styles.progressText}>
-          {joinedPlayers}/{totalSpots} spots filled
-        </Text>
-      </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  card: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
-  topSection: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  hostSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   hostImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 12,
   },
-  hostInfo: {
-    justifyContent: 'center',
+  headerText: {
+    flex: 1,
   },
-  hostName: {
+  title: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  dateTime: {
+  host: {
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 14,
   },
-  buyInSection: {
+  details: {
+    width: '100%',
+  },
+  detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  buyInAmount: {
-    color: '#BB86FC',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 4,
-  },
-  progressContainer: {
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  progressBackground: {
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 4,
-    overflow: 'hidden',
+  separator: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(187, 134, 252, 0.2)',
   },
-  progressBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  progressText: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 12,
-    textAlign: 'center',
+  detailText: {
+    color: 'white',
+    fontSize: 14,
   },
 }); 

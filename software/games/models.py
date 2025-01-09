@@ -1,48 +1,46 @@
 import uuid
+from users.models import Profile
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth.models import User
-from django.utils import timezone as django_timezone
-
-class Profile(models.Model):
-  user = models.OneToOneField(User, null=True, on_delete=models.CASCADE)
-  bio = models.TextField(blank=True)
-  phone = models.CharField(max_length=10, blank=True)
-  address = models.CharField(max_length=1024)
-  age = models.PositiveIntegerField(blank=True, null=True)
-  #gender = models.IntegerField(choices=GENDER_CHOICES, default=1)
-
-  def __str__(self):
-    return str(self.user)
 
 class Game(models.Model):
   title = models.CharField(max_length=255, default="Great Game, Good Fun")
-  host = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-  slots = models.DecimalField(max_digits=2, decimal_places=0, default=5)
-  description = models.TextField(default='Have fun with me!')
-  private = models.BooleanField(default=False)
 
+  host = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+  slots = models.IntegerField(default=5)
+  players = models.ManyToManyField(User, related_name='joined_games', blank=True)
+  #players = models.ManyToManyField(Player, through='GamePlayer', blank=True)
+
+  private = models.BooleanField(default=False)
+  description = models.TextField(default='Have fun with me!')
+  
   #Optional buy-in and reserved money can be 0
-  buy_in = models.DecimalField(max_digits=10, decimal_places=0, default=0)
-  blinds = models.DecimalField(max_digits=10, decimal_places=0, default=0)
-  amount_reserved = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+  buy_in = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+  blinds = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
   # Date and time the game starts was created
-  time_start = models.DateTimeField(blank=False)  # Changed to None
-  time_created = models.DateField(null=True, default=django_timezone.now) # Automatically set on creation
-  #time_end = models.DateTimeField(null=True, blank=True)  # Optional field
+  time_start = models.TimeField(null=True, default=timezone.now().time())  # Now's time only
+  date_start = models.DateField(null=True, default=timezone.now().date())  # Now's date only
+  time_created = models.DateTimeField(null=True, default=timezone.now())
   
   # Unique identifier for the game, generated on save
-  game_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+  unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
   def __str__(self):
-    return f"{self.title} | Hosted by: {self.host.first_name if self.host else 'Unknown'} | Starts at: {self.time_start} | Game ID: {self.game_id}"  # Improved string representation
+    return f"{self.title} | Hosted by: {self.host.first_name if self.host else 'Unknown'} | Starts at: {self.time_start} | Game ID: {self.unique_id}"
   
+  '''def save(self, *args, **kwargs):
+    if self.host:  # Check if self.host exists before accessing its pk
+      if self.host not in self.players.all():
+        self.players.add(self.host)
+    super().save(*args, **kwargs)'''
+
   def get_absolute_url(self):
     return reverse('game-list')
     #return reverse('game-details', args=(str(self.id)) )
   
-
 '''class Apple(models.Model):
   name = models.CharField(max_length=100)
   color = models.CharField(max_length=100)

@@ -1,57 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientButton from '../../../components/ui/GradientButton';
-
-// This would come from your API/database in reality
-const GAME_DETAILS = {
-  '1': {
-    id: '1',
-    hostName: 'John Doe',
-    hostImage: 'https://i.pravatar.cc/150?img=1',
-    dateTime: 'Today, 8:00 PM',
-    buyIn: 100,
-    joinedPlayers: 6,
-    totalSpots: 9,
-    description: 'Weekly poker night! All skill levels welcome. Friendly atmosphere with snacks and drinks provided. Tournament style with rebuys available for the first hour.',
-    location: '123 Poker Street, Card City',
-  },
-  '2': {
-    id: '2',
-    hostName: 'Jane Smith',
-    hostImage: 'https://i.pravatar.cc/150?img=2',
-    dateTime: 'Tomorrow, 7:30 PM',
-    buyIn: 250,
-    joinedPlayers: 4,
-    totalSpots: 8,
-    description: 'High stakes game for experienced players. Professional dealer, secure venue, complimentary refreshments. No rebuys.',
-    location: '456 Casino Ave, Poker Valley',
-  },
-  '3': {
-    id: '3',
-    hostName: 'Mike Johnson',
-    hostImage: 'https://i.pravatar.cc/150?img=3',
-    dateTime: 'Sat, 9:00 PM',
-    buyIn: 500,
-    joinedPlayers: 2,
-    totalSpots: 6,
-    description: 'Monthly tournament series qualifier. Winner gets entry into the championship round. Serious players only.',
-    location: '789 Tournament Blvd, Poker City',
-  },
-  '4': {
-    id: '4',
-    hostName: 'Sarah Wilson',
-    hostImage: 'https://i.pravatar.cc/150?img=4',
-    dateTime: 'Fri, 6:00 PM',
-    buyIn: 200,
-    joinedPlayers: 3,
-    totalSpots: 6,
-    description: 'Friendly home game with regular players. Casual atmosphere, perfect for intermediate players looking for consistent games.',
-    location: '321 Home Game Lane, Card Town',
-  },
-};
+import { useRouter } from 'expo-router';
+import { fetchGameById, joinGame } from '../../../services/gameService';
+import { Game } from '../(tabs)/FindGamesPage';
+import { useAuth } from '@clerk/clerk-expo';
 
 interface InfoCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -70,18 +26,107 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, title, value }) => (
 );
 
 export default function GameDetailsScreen(): React.JSX.Element {
+  const router = useRouter();
   const { id } = useLocalSearchParams();
-  const game = GAME_DETAILS[id as keyof typeof GAME_DETAILS];
-  
-  if (!game) {
+  const [game, setGame] = useState<Game | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user, isLoaded, isSignedIn } = useAuth();
+  const [joining, setJoining] = useState(false);
+
+  const isHostOrAdmin = () => {
+    return game?.host?.id === user?.id || 
+           game?.players?.some(player => 
+             player.user.id === user?.id && player.is_admin
+           );
+  };
+
+  useEffect(() => {
+    const checkGameAccess = async () => {
+      if (!isLoaded || !isSignedIn || !user) return;
+
+      try {
+        const game = await fetchGameById(id as string);
+
+        // Log access check
+        console.log('GameDetails access check:', {
+          userId: user.id,
+          isHost: game.isHostedByMe,
+          players: game.joinedPlayers
+        });
+
+        // Remove any automatic redirects here
+        // Let the user view the game details and choose to join
+      } catch (error) {
+        console.error('Error checking game access:', error);
+      }
+    };
+
+    checkGameAccess();
+  }, [id, isLoaded, isSignedIn, user]);
+
+  useEffect(() => {
+    const loadGame = async () => {
+      try {
+        if (!id) return;
+        const gameData = await fetchGameById(id.toString());
+        setGame(gameData);
+      } catch (error) {
+        console.error('Error loading game:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGame();
+  }, [id]);
+
+  const handleJoinGame = async () => {
+    try {
+      setJoining(true);
+      
+      // Check if user is already in the game
+      const isAlreadyJoined = game?.players?.some(
+        player => player.user.id === user?.id
+      );
+      
+      if (isAlreadyJoined) {
+        // If already joined, just navigate to the appropriate dashboard
+        if (isHostOrAdmin()) {
+          router.replace(`/(home)/(screens)/GameDashboardAdminScreen?id=${id}`);
+        } else {
+          router.replace(`/(home)/(screens)/GameDashboardScreen?id=${id}`);
+        }
+        return;
+      }
+
+      await joinGame(game?.id);
+      router.replace(`/(home)/(screens)/GameDashboardScreen?id=${id}`);
+    } catch (error) {
+      console.error('Error joining game:', error);
+      Alert.alert('Error', 'Failed to join game');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  if (loading) {
     return (
       <View style={[styles.container, styles.errorContainer]}>
-        <Text style={styles.errorText}>Game not found</Text>
+        <Text style={styles.errorText}>Loading game details...</Text>
       </View>
     );
   }
 
-  const progressPercentage = (game.joinedPlayers / game.totalSpots) * 100;
+  if (error || !game) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Text style={styles.errorText}>{error || 'Game not found'}</Text>
+      </View>
+    );
+  }
+
+  const progressPercentage = (game.playerCount / game.totalSpots) * 100;
 
   return (
     <View style={styles.container}>
@@ -91,14 +136,25 @@ export default function GameDetailsScreen(): React.JSX.Element {
         end={{ x: 1, y: 0 }}
         style={styles.headerGradient}
       >
-        <View style={styles.headerContent}>
-          <Image
-            source={{ uri: game.hostImage }}
-            style={styles.hostImage}
-          />
-          <Text style={styles.hostName}>{game.hostName}</Text>
-          <Text style={styles.hostSubtitle}>Game Host</Text>
-        </View>
+        <SafeAreaView>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
+            <View style={styles.headerTextContainer}>
+              <Image
+                source={{ uri: game.hostImage }}
+                style={styles.hostImage}
+              />
+              <Text style={styles.hostName}>{game.hostName}</Text>
+              <Text style={styles.hostSubtitle}>Game Host</Text>
+            </View>
+            <View style={{ width: 40 }} />
+          </View>
+        </SafeAreaView>
       </LinearGradient>
 
       <ScrollView style={styles.content}>
@@ -119,7 +175,7 @@ export default function GameDetailsScreen(): React.JSX.Element {
           <View style={styles.capacityHeader}>
             <Text style={styles.capacityTitle}>Capacity</Text>
             <Text style={styles.capacityValue}>
-              {game.joinedPlayers}/{game.totalSpots} spots filled
+              {game.playerCount}/{game.totalSpots} spots filled
             </Text>
           </View>
           <View style={styles.progressBackground}>
@@ -134,19 +190,26 @@ export default function GameDetailsScreen(): React.JSX.Element {
 
         <View style={styles.descriptionCard}>
           <Text style={styles.descriptionTitle}>About This Game</Text>
-          <Text style={styles.descriptionText}>{game.description}</Text>
+          <Text style={styles.descriptionText}>{game.description || 'No description available'}</Text>
         </View>
 
-        <View style={styles.locationCard}>
-          <Text style={styles.locationTitle}>Location</Text>
-          <Text style={styles.locationText}>{game.location}</Text>
-        </View>
+        {game.location && (
+          <View style={styles.locationCard}>
+            <Text style={styles.locationTitle}>Location</Text>
+            <Text style={styles.locationText}>{game.location}</Text>
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
         <GradientButton 
-          text={`Join Game ($${game.buyIn})`}
-          onPress={() => console.log('Join game:', id)}
+          text={game.isPlayer 
+            ? 'Already Joined' 
+            : game.playerCount >= game.totalSpots
+            ? 'Game Full'
+            : `Join Game ($${game.buyIn})`}
+          onPress={handleJoinGame}
+          disabled={game.isPlayer || game.playerCount >= game.totalSpots}
         />
       </View>
     </View>
@@ -165,7 +228,12 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   hostImage: {
     width: 80,
@@ -292,5 +360,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     textAlign: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
+    alignItems: 'center',
   },
 }); 

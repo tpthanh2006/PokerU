@@ -1,6 +1,7 @@
-from django.shortcuts import render
 from django.http import JsonResponse
+from django.shortcuts import render, redirect
 from django.views.generic import ListView, DetailView, CreateView
+from django.contrib.auth.decorators import login_required
 #from .models import Apple
 #from .serializers import serialize_apples
 
@@ -21,10 +22,29 @@ class AddGameView(CreateView):
             'slots',
             'private',
             'time_start',
+            'date_start',
             'buy_in',
             'blinds',
-            'amount_reserved', 'description') 
+            'description') 
   template_name = "add_game.html"
+
+@login_required
+def join_game(request, pk):
+  try:
+    game = Game.objects.get(id=pk)
+  except Game.DoesNotExist:
+    return render(request, 'error.html', {'message': 'Game not found.'})
+
+  if game.players.count() >= game.slots:
+    return render(request, 'error.html', {'message': 'Game is full.'})
+  
+  context = {'game' : game}
+  if request.user not in game.players.all():
+    game.players.add(request.user)
+
+  game.save()
+  #return render(request, 'join_game.html', context)
+  return redirect('game-details', pk=game.pk)
 
 '''def home_games(request):
   #return render(request, 'games.html', {})

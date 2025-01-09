@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SegmentedControl } from '../../../components/ui/SegmentedControl';
 import { ChatPreview } from '../../../components/ui/ChatPreview';
@@ -63,15 +63,11 @@ export default function ChatPage(): React.JSX.Element {
         end={{ x: 1, y: 0 }}
         style={styles.headerGradient}
       >
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Messages</Text>
-          <Text style={styles.headerSubtitle}>
-            {selectedIndex === 0 
-              ? 'Chat with other players'
-              : 'Game group chats'
-            }
-          </Text>
-        </View>
+        <SafeAreaView>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Messages</Text>
+          </View>
+        </SafeAreaView>
       </LinearGradient>
 
       <SegmentedControl
@@ -103,24 +99,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a0325',
   },
   headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   headerTitle: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
   },
   segmentedControl: {
     marginVertical: 20,
