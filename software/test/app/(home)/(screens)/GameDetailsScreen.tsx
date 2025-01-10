@@ -102,9 +102,29 @@ export default function GameDetailsScreen(): React.JSX.Element {
 
       await joinGame(game?.id);
       router.replace(`/(home)/(screens)/GameDashboardScreen?id=${id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining game:', error);
-      Alert.alert('Error', 'Failed to join game');
+      // Show specific error message for friend-only games
+      if (error.message?.includes('friends_only')) {
+        Alert.alert(
+          'Friends Only',
+          'This is a private game. Only friends of the host can join.',
+          [
+            { text: 'OK' },
+            {
+              text: 'Add Friend',
+              onPress: () => {
+                // Navigate to host's profile or send friend request
+                if (game?.hostName) {
+                  router.push(`/(home)/(screens)/UserProfileScreen?id=${game.hostName}`);
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to join game');
+      }
     } finally {
       setJoining(false);
     }

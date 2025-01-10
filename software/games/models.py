@@ -11,6 +11,7 @@ from users.models import ClerkUser
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 import random
+from django.db.models import Q
 
 class Profile(models.Model):
   user = models.OneToOneField(
@@ -187,6 +188,23 @@ class Game(models.Model):
         f'Your game "{self.title}" has ended!'
     )
 
+  def can_user_join(self, user):
+    # If game is public, anyone can join
+    if not self.private:
+        return True
+            
+    # If user is host, they can join
+    if self.host == user:
+        return True
+            
+    # Check if user is friends with host
+    friendship = Friendship.objects.filter(
+        (Q(user1=self.host, user2=user) | Q(user1=user, user2=self.host)),
+        status='accepted'
+    ).exists()
+        
+    return friendship
+
 class GamePlayer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='joined_games')
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='game_players')
@@ -321,3 +339,51 @@ class GameStats(models.Model):
 class Player(models.Model):
     # ... existing Player model code ...
     pass
+
+class Friendship(models.Model):
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friendships_initiated')
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friendships_received')
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined')
+    ], default='pending')
+
+    class Meta:
+        unique_together = ('user1', 'user2')
+
+    def __str__(self):
+        return f"{self.user1.username} - {self.user2.username} ({self.status})"
+
+class Follow(models.Model):
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'followed')
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.followed.username}"
+
+class Chat(models.Model):
+    game = models.OneToOneField(
+        Game, 
+        on_delete=models.CASCADE,
+        related_name='chat'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Chat for {self.game.title}"
+
+    def add_message(self, sender, content, is_system_message=False):
+        """Helper method to add a message to the chat"""
+        return Message.objects.create(
+            chat=self,
+            sender=sender,
+            content=content,
+            is_system_message=is_system_message
+        )
