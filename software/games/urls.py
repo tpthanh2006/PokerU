@@ -1,12 +1,14 @@
-from django.urls import path
-from .views import HomeView, GameDetailView, AddGameView, join_game
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
+
+router = DefaultRouter()
+router.register(r'', views.GameViewSet, basename='game')
+
+print("\n=== Registered URLs ===")
+for url in router.urls:
+    print(f"- {url.name}: {url.pattern}")
 
 urlpatterns = [
-    path('', HomeView.as_view(), name = "game-list"),
-    path('game/<int:pk>', GameDetailView.as_view(), name = "game-details"), #pk is a unique id automatically created by Django & assigned to each object in database
-    path('add_game/', AddGameView.as_view(), name="add-game"),
-    path('join_game/<int:pk>', join_game, name="join-game"),
-
-    #path('', views.home_games, name = "home_games"),
-    #path('', views.apple_list),
+    path('', include(router.urls)),
 ]

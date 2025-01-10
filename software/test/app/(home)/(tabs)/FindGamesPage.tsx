@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView, SafeAreaView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView, SafeAreaView, RefreshControl, ActivityIndicator, Alert, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SegmentedControl } from '../../../components/ui/SegmentedControl';
 import { JoinedGameCard } from '../../../components/ui/JoinedGameCard';
@@ -12,6 +12,7 @@ import { setApiAuth } from '../../../services/api';
 import api from '../../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateTime } from '../../../utils/dateFormatting';
+import { getGameAvatar } from '../../../utils/gameAvatars';
 
 const { width } = Dimensions.get('window');
 
@@ -346,5 +347,11 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  gameImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginRight: 10,
   },
 });

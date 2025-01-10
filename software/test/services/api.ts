@@ -160,4 +160,42 @@ export const markNotificationAsRead = async (notificationId: string) => {
   }
 };
 
-export default api; 
+export const getCurrentUserId = async (): Promise<string> => {
+  const userId = api.defaults.headers.common['X-User-Id'];
+  console.log('[API Service] Getting current user ID:', userId);
+  
+  if (!userId) {
+    console.warn('[API Service] No user ID found in headers');
+    throw new Error('No user ID available');
+  }
+  
+  return userId as string;
+};
+
+// Add this function to get current user's backend info
+export const getCurrentUserInfo = async () => {
+  try {
+    console.log('[API Service] Fetching current user info...');
+    const response = await api.get('users/me/');
+    console.log('[API Service] Current user info:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[API Service] Error fetching current user info:', error);
+    throw error;
+  }
+};
+
+const apiService = {
+  ...api,
+  setApiAuth,
+  clearApiAuth,
+  createGame,
+  getUserStats,
+  getNotifications,
+  markNotificationAsRead,
+  getCurrentUserId,
+  getCurrentUserInfo,
+};
+
+export { apiService as api };
+export default apiService; 

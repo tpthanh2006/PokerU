@@ -13,6 +13,7 @@ import { Game } from './FindGamesPage';
 import { setApiAuth } from '../../../services/api';
 import { NotificationBanner } from '../../../components/ui/NotificationBanner';
 import api from '../../../services/api';
+import { getGameAvatar } from '../../../utils/gameAvatars';
 
 const { width } = Dimensions.get('window');
 

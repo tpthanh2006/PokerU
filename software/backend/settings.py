@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +26,13 @@ SECRET_KEY = 'django-insecure-=hui_!)#tu8a*95wdbv296%8cor@q-78q(_dh@uky0ugy*ygoj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '10.128.48.97',  # Your IP address
+    '.ngrok.io',     # For ngrok tunneling
+    '.ngrok-free.app',
+]
 
 
 # Application definition
@@ -37,20 +44,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'corsheaders',
     'games',
     'users',
+    'notifications.apps.NotificationsConfig',
+    'chat',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.ClerkAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-     "corsheaders.middleware.CorsMiddleware",
 ]
 
 # Make sure the port number matches the one you're using for the React app.
@@ -130,3 +141,74 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = "game-list"
 LOGOUT_REDIRECT_URL = "login"
+
+CLERK_WEBHOOK_SECRET = 'whsec_0IpEckqeohszMc3s5bWwrV0OStfFHYsJ'
+CLERK_PUBLISHABLE_KEY = 'pk_test_YnJhdmUtbGFyay0yNS5jbGVyay5hY2NvdW50cy5kZXYk'
+CLERK_PUBLIC_KEY = '''-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnGs6OFct03GbyDkfXpHd
+fRQeW/S3YAR3JSldiZ2PNYOEjX6Lo4Ka+mIOWFQrxJ1D7ldHdrl0sRiaYToQy4A6
+59TF65g7t2e0/HUfT9tD1/NPrf2XrG9jajen61QNn0iMFeLtWunxEpJUchVTXJlQ
+/M84rfA14wNP2YSzaxfHTLvSNeDcZloHBuPbPCulKhB/dG3co8ZNxQ3dfpVlf/1W
+WJvkc+YyqbiSifctW2mZiK49o9RQTlBSRJ7INVJ3zVJrhFMWnE7hDWPSxSk/oeIS
+ZofS+SE1XkNASOI+KRbGchiwDaVbEPX2PeWSzkIYJ3afo4OA0+Qi113OcXz3EZQR
+yQIDAQAB
+-----END PUBLIC KEY-----
+'''
+CLERK_JWT_AUDIENCE = 'brave-lark-25.clerk.accounts.dev'
+CLERK_ISSUER = 'https://brave-lark-25.clerk.accounts.dev'
+CLERK_SECRET_KEY = 'sk_test_Z6pVmTLgiTkZ0FpVU0gH1gibhWLpws9ljg99AV36lA'
+
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
+
+AUTHENTICATION_BACKENDS = [
+    'users.backends.ClerkAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.ClerkAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_SECURE = False  # Set to True in production
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = None  # Set to 'Lax' or 'Strict' in production
+
+# Add JWT settings
+JWT_AUTH = {
+    'JWT_LEEWAY': 60,  # seconds
+    'JWT_ALLOW_REFRESH': True,
+    'JWT_VERIFY_IAT': False,  # Disable "Issued At" validation temporarily
+}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { GameAvatar } from './GameAvatar';
 
 interface ChatPreviewProps {
   id: string;
@@ -28,7 +29,7 @@ export const ChatPreview: React.FC<ChatPreviewProps> = ({
       onPress={() => onPress(id)}
     >
       <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.avatar} />
+        <GameAvatar title={title} size={50} />
         {isGameChat && (
           <View style={styles.gameIndicator}>
             <Text style={styles.gameIndicatorText}>G</Text>

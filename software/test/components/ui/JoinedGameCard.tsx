@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GameAvatar } from './GameAvatar';
 
 interface JoinedGameCardProps {
   id: string;
@@ -30,7 +31,7 @@ export const JoinedGameCard: React.FC<JoinedGameCardProps> = ({
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.header}>
         <View style={styles.hostInfo}>
-          <Image source={{ uri: hostImage }} style={styles.hostImage} />
+          <GameAvatar title={title} size={60} />
           <View>
             <Text style={styles.title}>{title}</Text>
             <View style={styles.hostRow}>

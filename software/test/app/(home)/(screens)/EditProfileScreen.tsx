@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { InputField } from '../../../components/ui/InputField';
 import { KeyboardAwareView } from '../../../components/ui/KeyboardAwareView';
 import GradientButton from '../../../components/ui/GradientButton';
+import { api } from '../../../services/api';
 
 export default function EditProfileScreen() {
   const { user } = useUser();
@@ -43,6 +44,19 @@ export default function EditProfileScreen() {
       // Update email if changed
       if (email !== user?.primaryEmailAddress?.emailAddress) {
         await user?.createEmailAddress({ email });
+      }
+
+      // Always sync with backend after any Clerk updates
+      const token = await getToken();
+      if (token) {
+        await api.post('users/sync_profile/', {
+          clerk_data: {
+            id: user?.id,
+            username: username,
+            email: email,
+            profile_image_url: user?.imageUrl
+          }
+        });
       }
 
       // Update password if provided
@@ -115,7 +129,7 @@ export default function EditProfileScreen() {
             name: filename,
           };
 
-          // Try to get a fresh token before upload
+          // Get token for both operations
           const token = await getToken();
           console.log('Token available:', !!token);
 
@@ -130,6 +144,18 @@ export default function EditProfileScreen() {
           
           // Force reload the user
           await user?.reload();
+
+          // Sync with backend using the same token
+          if (token) {
+            await api.post('users/sync_profile/', {
+              clerk_data: {
+                id: user?.id,
+                username: user?.username,
+                email: user?.primaryEmailAddress?.emailAddress,
+                profile_image_url: user?.imageUrl
+              }
+            });
+          }
           
           setLoading(false);
         } catch (uploadError: any) {

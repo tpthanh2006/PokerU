@@ -4,10 +4,8 @@
 <h1>Games</h1>
 <ul>
 {% for game in object_list %}
-  <li><a href = "{% url 'game-details' game.pk %}">{{ game.title }}</a> - {{ game.host.first_name }}<br/>
-  Slots: {{ game.slots }}<br/>
-  Description: {{ game.description }}</li>
-
+  <li><a href = "{% url 'game-details' game.pk %}">{{ game.title }}</a> - {{ game.host.first_name }} - {{ game.host.email }}<br/>
+  {{ game.description }}</li>
 {% endfor %}
 </ul>
 

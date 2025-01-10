@@ -1,59 +1,55 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SegmentedControl } from '../../../components/ui/SegmentedControl';
 import { ChatPreview } from '../../../components/ui/ChatPreview';
 import { router } from 'expo-router';
-
-const DIRECT_CHATS = [
-  {
-    id: '1',
-    title: 'John Doe',
-    lastMessage: 'See you at the game tonight!',
-    time: '2m ago',
-    image: 'https://i.pravatar.cc/150?img=1',
-    unreadCount: 2,
-  },
-  {
-    id: '2',
-    title: 'Jane Smith',
-    lastMessage: 'Great game yesterday!',
-    time: '1h ago',
-    image: 'https://i.pravatar.cc/150?img=2',
-  },
-];
-
-const GAME_CHATS = [
-  {
-    id: 'g1',
-    title: 'Friday Night Poker',
-    lastMessage: 'Mike: Looking forward to it!',
-    time: '5m ago',
-    image: 'https://i.pravatar.cc/150?img=3',
-    unreadCount: 5,
-    isGameChat: true,
-  },
-  {
-    id: 'g2',
-    title: 'Weekend Tournament',
-    lastMessage: 'Sarah: What time does it start?',
-    time: '30m ago',
-    image: 'https://i.pravatar.cc/150?img=4',
-    isGameChat: true,
-  },
-];
+import { chatService, ChatPreviewData } from '../../../services/chatService';
+import { useFocusEffect } from '@react-navigation/native';
+import { getGameAvatar } from '../../../utils/gameAvatars';
 
 export default function ChatPage(): React.JSX.Element {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [chats, setChats] = useState<ChatPreviewData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadChats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const chatData = await chatService.getChats();
+      setChats(chatData);
+    } catch (error) {
+      console.error('Error loading chats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh chats every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadChats();
+    }, [loadChats])
+  );
 
   const handleChatPress = (chatId: string) => {
+    const selectedChat = chats.find(c => c.id === chatId);
+    if (!selectedChat) return;
+
     router.push({
       pathname: "/(home)/(screens)/ChatScreen",
-      params: { id: chatId }
+      params: { 
+        id: chatId,
+        gameId: selectedChat.gameId.toString()
+      }
     });
   };
 
-  const displayedChats = selectedIndex === 0 ? DIRECT_CHATS : GAME_CHATS;
+  // Filter chats based on selected tab
+  const displayedChats = chats.filter(chat => 
+    selectedIndex === 0 ? !chat.isGameChat : chat.isGameChat
+  );
 
   return (
     <View style={styles.container}>
@@ -81,13 +77,29 @@ export default function ChatPage(): React.JSX.Element {
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
-        {displayedChats.map((chat) => (
-          <ChatPreview
-            key={chat.id}
-            {...chat}
-            onPress={handleChatPress}
-          />
-        ))}
+        {loading ? (
+          <ActivityIndicator size="large" color="#BB86FC" />
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadChats}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : displayedChats.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No chats available</Text>
+          </View>
+        ) : (
+          displayedChats.map((chat) => (
+            <ChatPreview
+              key={chat.id}
+              {...chat}
+              image={getGameAvatar(chat.title)}
+              onPress={handleChatPress}
+            />
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -123,5 +135,37 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#BB86FC',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });

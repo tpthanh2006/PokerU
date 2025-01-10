@@ -22,19 +22,20 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1a0325"
-    },
     "plugins": [
       "expo-router",
-      "expo-splash-screen",
       [
         "@clerk/clerk-expo",
         {
           "publishableKey": "pk_test_YnJhdmUtbGFyay0yNS5jbGVyay5hY2NvdW50cy5kZXYk"
         }
+      ],
+      [
+      "expo-splash-screen",
+      {
+        "backgroundColor": "#1a0325",
+        "image": "./assets/images/splash.png"
+      }
       ]
     ],
     "experiments": {

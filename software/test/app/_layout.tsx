@@ -1,15 +1,19 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect } from 'react';
-import { View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { ClerkProvider, ClerkLoaded, useAuth, useUser } from '@clerk/clerk-expo';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { setApiAuth, initializeAuth, clearApiAuth } from '../services/api';
+import { setApiAuth, clearApiAuth } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Prevent the splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
 
 // Create a simple token cache
 const tokenCache = {
@@ -29,26 +33,25 @@ const tokenCache = {
   }
 };
 
-// Configure splash screen
-SplashScreen.preventAutoHideAsync();
-
-function AuthenticatedLayout() {
+function InitialLayout() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
   const segments = useSegments();
   const router = useRouter();
+  const [appReady, setAppReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  });
 
+  // Handle auth setup
   useEffect(() => {
     const setupAuth = async () => {
       if (isSignedIn && user) {
         try {
-          // Get a fresh token
           const token = await getToken();
           if (token) {
-            console.log('Got fresh token from Clerk');
             await setApiAuth(token, user.id);
           } else {
-            console.warn('No token available');
             clearApiAuth();
           }
         } catch (err) {
@@ -65,46 +68,47 @@ function AuthenticatedLayout() {
     }
   }, [isLoaded, userLoaded, isSignedIn, user, getToken]);
 
-  // Handle navigation based on auth state
+  // Handle navigation after initial mount
   useEffect(() => {
-    if (!isLoaded || !userLoaded) return;
+    if (!isLoaded || !userLoaded || !appReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    console.log('Navigation check:', { 
-      isSignedIn, 
-      inAuthGroup, 
-      segments,
-      hasUser: !!user,
-      userId: user?.id 
-    });
-    
     if (!isSignedIn && !inAuthGroup) {
-      console.log('Redirecting to auth');
       router.replace('/(auth)/OnboardingScreen');
     } else if (isSignedIn && inAuthGroup) {
-      console.log('Redirecting to home');
       router.replace('/(home)/(tabs)/HomePage');
     }
-  }, [isLoaded, userLoaded, isSignedIn, segments]);
+  }, [isLoaded, userLoaded, isSignedIn, segments, appReady]);
 
-  return <Slot />;
+  // Handle layout and splash screen
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded && isLoaded && userLoaded) {
+      try {
+        await SplashScreen.hideAsync();
+        setAppReady(true);
+      } catch (error) {
+        console.error('Error hiding splash screen:', error);
+      }
+    }
+  }, [fontsLoaded, isLoaded, userLoaded]);
+
+  if (!fontsLoaded || !isLoaded || !userLoaded) {
+    return null;  // Keep the native splash screen visible
+  }
+
+  return (
+    <View 
+      style={{ flex: 1, backgroundColor: '#1a0325' }} 
+      onLayout={onLayoutRootView}
+    >
+      <Slot />
+      <StatusBar style="light" />
+    </View>
+  );
 }
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  const onLayoutRootView = useCallback(async () => {
-    if (loaded) {
-      await SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
 
   return (
     <ClerkProvider 
@@ -120,13 +124,7 @@ export default function RootLayout() {
     >
       <ClerkLoaded>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <View 
-            style={{ flex: 1, backgroundColor: '#1a0325' }} 
-            onLayout={onLayoutRootView}
-          >
-            <AuthenticatedLayout />
-            <StatusBar style="light" />
-          </View>
+          <InitialLayout />
         </ThemeProvider>
       </ClerkLoaded>
     </ClerkProvider>
