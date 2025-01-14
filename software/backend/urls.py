@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/users/webhooks/clerk/', clerk_webhook, name='clerk-webhook'),
     path('api/chat/', include('chat.urls')),
+    path('api/friends/', include('friends.urls')),
 ]

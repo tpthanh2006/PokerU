@@ -38,7 +38,7 @@ class Game(models.Model):
     ('cancelled', 'Cancelled'),
   ]
 
-  host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_games')
+  host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_games', null=True)
   title = models.CharField(max_length=255)
   description = models.TextField(blank=True)
   location = models.CharField(max_length=255)
@@ -46,7 +46,7 @@ class Game(models.Model):
   buy_in = models.DecimalField(max_digits=10, decimal_places=2)
   slots = models.IntegerField()
   blinds = models.DecimalField(max_digits=10, decimal_places=2)
-  amount_reserved = models.DecimalField(max_digits=10, decimal_places=2)
+  amount_reserved = models.DecimalField(max_digits=10, decimal_places=2, default=0)
   private = models.BooleanField(default=False)
   status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
   created_at = models.DateTimeField(auto_now_add=True)
@@ -366,24 +366,3 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"{self.follower.username} follows {self.followed.username}"
-
-class Chat(models.Model):
-    game = models.OneToOneField(
-        Game, 
-        on_delete=models.CASCADE,
-        related_name='chat'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"Chat for {self.game.title}"
-
-    def add_message(self, sender, content, is_system_message=False):
-        """Helper method to add a message to the chat"""
-        return Message.objects.create(
-            chat=self,
-            sender=sender,
-            content=content,
-            is_system_message=is_system_message
-        )
