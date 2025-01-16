@@ -60,7 +60,7 @@ This guide is used for developers. An installation guide for users will be creat
 2. **Activate the terminal**: Open Bash, CMD, or PowerShell
 3. **Install required packages**: Navigate to frontend and backend to install packages for React Native and Django
     ```sh
-    cd .../software/frontend
+    cd .../software/test
     npm i #install all packages for npm
     
     cd .../software/backend
@@ -76,7 +76,7 @@ This guide is used for developers. An installation guide for users will be creat
     ```
 5. **Run frontend for app site**: 
     ```sh
-    cd .../software/frontend
+    cd .../software/test
     npm expo start
     #click on local host link
     ```
