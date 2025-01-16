@@ -1,6 +1,5 @@
 ![](design_files/logo_large.png)
 
-
 A social media app designed for Tulane students to easily organize and join poker games on campus, compete and have fun!
 
 
@@ -23,7 +22,7 @@ Please recommend any new features by describing your idea in this [form](https:/
     ```
 5. **Make your changes**: Implement your feature or bug fix.
     ```sh
-    cd .../software/frontend #to customize react-native frontend
+    cd .../software/test #to customize react-native frontend
     cd .../software/backend #to customize django backend
     ```
 6. **Commit your changes**: 
@@ -65,8 +64,7 @@ This guide is used for developers. An installation guide for users will be creat
     npm i #install all packages for npm
     
     cd .../software/backend
-    python -m pip install django #install django packages
-    python -m pip install django-cors-headers #install django-cors-headers packages
+    pip install -r requirements.txt
     ```
 4. **Run backend for server site**: 
     ```sh
@@ -79,9 +77,19 @@ This guide is used for developers. An installation guide for users will be creat
 5. **Run frontend for app site**: 
     ```sh
     cd .../software/frontend
-    npm run dev
+    npm expo start
     #click on local host link
     ```
+
+## Development Options
+- Open in Android Emulator: Press 'a'
+- Open in iOS Simulator: Press 'i'
+- Open in Expo Go: Scan QR code with the Expo Go app
+- Open in web browser: Press 'w'
+
+## Authentication
+The app uses Clerk for authentication. Make sure to set up your Clerk environment variables in:
+
 ### Known Issues
 - [OperationalError, no such column. Django](https://stackoverflow.com/questions/26312219/operationalerror-no-such-column-django)
     1. Delete the db.sqlite3 file
@@ -99,6 +107,26 @@ This guide is used for developers. An installation guide for users will be creat
     ```
 - [Migrations are not up to date with new models](https://forum.djangoproject.com/t/deleting-a-model-cause-error-for-old-migrations-that-had-referenced-it/25743)
 
+## API Documentation
+The backend API endpoints are available at:
+- Games: `http://localhost:8000/api/games/`
+- Notifications: `http://localhost:8000/api/notifications/`
+- Users: `http://localhost:8000/api/users/`
+- Chat: `http://localhost:8000/api/chat/`
+- Friends: `http://localhost:8000/api/friends/`
+
+## Contributing
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Tech Stack
+- Frontend: React Native (Expo)
+- Backend: Django REST Framework
+- Authentication: Clerk
+- Database: SQLite (development) / PostgreSQL (production)
 
 ## ER Diagram
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
