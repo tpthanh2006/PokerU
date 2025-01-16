@@ -214,6 +214,11 @@ export const joinGame = async (gameId: string): Promise<Game> => {
     
     const response = await api.post(`games/${gameId}/join/`);
     
+    // Handle potential friend-related errors
+    if (response.status === 403 && response.data?.detail === 'friends_only') {
+      throw new Error('This is a private game. Only friends of the host can join.');
+    }
+    
     console.log('Join game response:', {
       status: response.status,
       data: response.data

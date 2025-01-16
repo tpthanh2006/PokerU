@@ -5,11 +5,15 @@ from django.utils import timezone
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
+from django.db import models
+from games.models import Game
+from django.contrib.auth.models import User
+
 class Chat(models.Model):
     game = models.OneToOneField(
         Game, 
         on_delete=models.CASCADE,
-        related_name='chat'
+        related_name='game_chat'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)

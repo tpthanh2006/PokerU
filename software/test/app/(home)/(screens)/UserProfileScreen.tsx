@@ -434,4 +434,96 @@ const styles = StyleSheet.create({
   achievementDescriptionLocked: {
     opacity: 0.7,
   },
-}); 
+});
+
+import { friendService } from '../../../services/friendService';
+
+// Add to existing interface or create new one
+interface UserProfile {
+  id: string;
+  username: string;
+  imageUrl: string;
+  isFriend: boolean;
+  isFollowing: boolean;
+  friendCount: number;
+  followerCount: number;
+  followingCount: number;
+  rank: number;
+}
+
+export default function UserProfileScreen() {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends'>('none');
+
+  const handleFriendAction = async () => {
+    try {
+      if (friendStatus === 'none') {
+        await friendService.sendFriendRequest(user.id);
+        setFriendStatus('pending');
+      } else if (friendStatus === 'friends') {
+        await friendService.removeFriend(user.id);
+        setFriendStatus('none');
+      }
+    } catch (error) {
+      console.error('Error handling friend action:', error);
+      Alert.alert('Error', 'Failed to process friend request');
+    }
+  };
+
+  const handleFollowAction = async () => {
+    try {
+      if (isFollowing) {
+        await friendService.unfollowUser(user.id);
+        setIsFollowing(false);
+      } else {
+        await friendService.followUser(user.id);
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error handling follow action:', error);
+      Alert.alert('Error', 'Failed to process follow action');
+    }
+  };
+
+  // Add to the existing return JSX
+  return (
+    <View style={styles.buttonRow}>
+      <TouchableOpacity 
+        style={styles.actionButton}
+        onPress={handleMessage}
+      >
+        <Ionicons name="chatbubble" size={24} color="white" />
+        <Text style={styles.actionButtonText}>Message</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.actionButton, styles.friendButton]}
+        onPress={handleFriendAction}
+      >
+        <Ionicons 
+          name={friendStatus === 'friends' ? "person-remove" : "person-add"} 
+          size={24} 
+          color="white" 
+        />
+        <Text style={styles.actionButtonText}>
+          {friendStatus === 'none' ? 'Add Friend' : 
+           friendStatus === 'pending' ? 'Pending' : 'Remove Friend'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.actionButton, styles.followButton]}
+        onPress={handleFollowAction}
+      >
+        <Ionicons 
+          name={isFollowing ? "star" : "star-outline"} 
+          size={24} 
+          color="white" 
+        />
+        <Text style={styles.actionButtonText}>
+          {isFollowing ? 'Following' : 'Follow'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
