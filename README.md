@@ -22,7 +22,7 @@ Please recommend any new features by describing your idea in this [form](https:/
     ```
 5. **Make your changes**: Implement your feature or bug fix.
     ```sh
-    cd .../software/test #to customize react-native frontend
+    cd .../software/frontend #to customize react-native frontend
     cd .../software/backend #to customize django backend
     ```
 6. **Commit your changes**: 
@@ -60,7 +60,7 @@ This guide is used for developers. An installation guide for users will be creat
 2. **Activate the terminal**: Open Bash, CMD, or PowerShell
 3. **Install required packages**: Navigate to frontend and backend to install packages for React Native and Django
     ```sh
-    cd .../software/test
+    cd .../software/frontend
     npm i #install all packages for npm
     
     cd .../software/backend
@@ -76,7 +76,7 @@ This guide is used for developers. An installation guide for users will be creat
     ```
 5. **Run frontend for app site**: 
     ```sh
-    cd .../software/test
+    cd .../software/frontend
     npm expo start
     #click on local host link
     ```
