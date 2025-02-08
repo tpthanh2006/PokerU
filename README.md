@@ -1,7 +1,8 @@
-![[pokeru](https://www.pokeru.app/)](design_files/logo_large.png)
+![](design_files/logo_large.png)
 
 A social media app designed for Tulane students to easily organize and join poker games on campus, compete and have fun!
 
+# [FOLLOW OUR JOURNEY](https://www.pokeru.app/) 🧑‍💻
 
 ## Code Contributions
 ### Bug Report
