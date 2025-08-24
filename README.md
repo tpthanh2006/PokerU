@@ -135,7 +135,7 @@ This diagram represents the data entities (users, games, host, players, friends)
 
 # License
 
-This project is licensed under the [LICENSE]().
+This project is licensed under the [LICENSE](https://github.com/tpthanh2006/PokerU/blob/main/LICENSE).
 
 # Contact
 If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/) or [sophienguyen113@gmail.com](mailto:sophienguyen113@gmail.com).
