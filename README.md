@@ -135,6 +135,6 @@ This diagram represents the data entities (users, games, host, players, friends)
 
 
 # Contact
-If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/).
+If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/) or [sophienguyen113@gmail.com](mailto:sophienguyen113@gmail.com).
 
 Thank you for making PokerU come true!
