@@ -133,6 +133,9 @@ The backend API endpoints are available at:
 This diagram represents the data entities (users, games, host, players, friends) and their relationships within the campus poker app
 ![](design_files/erd.png)
 
+# License
+
+This project is licensed under the [LICENSE]().
 
 # Contact
 If you need further assistance or have some questions, reach out to us on [LinkedIn](https://www.linkedin.com/company/poker-u/) or [sophienguyen113@gmail.com](mailto:sophienguyen113@gmail.com).
